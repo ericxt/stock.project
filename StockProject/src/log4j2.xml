@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+		</Console>
+<!-- 
+		<File name="File" fileName="logs/RawDataExtraction.log">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+		</File>
+			 -->
+		<RollingFile name="RollingFile" fileName="logs/stock.project.log"
+			filePattern="logs/$${date:yyyy-MM}/Test-%d{MM-dd-yyyy}-%i.log.gz">
+			<BurstFilter level="INFO" rate="16" maxBurst="100" />
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="1 MB" />
+			</Policies>
+			<DefaultRolloverStrategy max="10" />
+		</RollingFile>
+	</Appenders>
+	<Loggers>
+<!-- 		<Logger name="timerTest.TimerTest" level="trace" additivity="false">
+			<AppenderRef ref="Console" />
+		</Logger> -->
+		<Root level="error">
+			<AppenderRef ref="Console" />
+		</Root>
+
+		<Root level="trace">
+			<AppenderRef ref="File" />
+		</Root>
+
+		<Root level="trace">
+			<AppenderRef ref="RollingFile" />
+		</Root>
+	</Loggers>
+</Configuration>
