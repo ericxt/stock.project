@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -146,11 +148,41 @@ public class IndexDetailsUtil {
 		}
 	}
 
+	/**
+	 * calHightAndLow Float Version
+	 * @param currentPrice
+	 * @param yesterdaySettle
+	 * @return
+	 */
 	float calHightAndLow(float currentPrice, float yesterdaySettle) {
 		// TODO Auto-generated method stub
 		return currentPrice - yesterdaySettle;
 	}
+	
+	/**
+	 * calHightAndLow BigDecimal Version
+	 * @param currentPrice
+	 * @param yesterdaySettle
+	 * @return
+	 */
+	public float calHightAndLow(BigDecimal currentPrice,
+			BigDecimal yesterdaySettle) {
+		// TODO Auto-generated method stub
+		if (currentPrice == null || yesterdaySettle == null) {
+			System.out.println("IndexDetailsUtil.calHightAndLow >>> parameters null");
+			return 0;
+		}
+		
+		BigDecimal hightAndLow = currentPrice.subtract(yesterdaySettle).setScale(2, BigDecimal.ROUND_HALF_DOWN);
+		return hightAndLow.floatValue();
+	}
 
+	/**
+	 * calHightAndLowRange Float Version
+	 * @param currentPrice
+	 * @param yesterdaySettle
+	 * @return
+	 */
 	float calHightAndLowRange(float currentPrice, float yesterdaySettle) {
 		// TODO Auto-generated method stub
 		if (yesterdaySettle != 0) {
@@ -159,32 +191,139 @@ public class IndexDetailsUtil {
 			return Float.MAX_VALUE;
 		}
 	}
+	
+	/**
+	 * calHightAndLowRange BigDecimal Version
+	 * @param currentPrice
+	 * @param yesterdaySettle
+	 * @return
+	 */
+	public float calHightAndLowRange(BigDecimal currentPrice,
+			BigDecimal yesterdaySettle) {
+		// TODO Auto-generated method stub
+		if (currentPrice == null || yesterdaySettle == null) {
+			System.out.println("IndexDetailsUtil.calHightAndLowRange >>> parameters null");
+		}
+		if (yesterdaySettle.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal hightAndLowRange = currentPrice.subtract(yesterdaySettle).divide(yesterdaySettle, 2, BigDecimal.ROUND_HALF_DOWN);
+			return hightAndLowRange.floatValue();
+		} else {
+			return Float.MAX_VALUE;
+		}
+	}
+
 
 	// to be completed, lack of real-time price
+	/**
+	 * calBasis Float Version
+	 * @param stockCode
+	 * @param currentPrice
+	 * @return
+	 */
 	float calBasis(String stockCode, float currentPrice) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	/**
+	 * calBasis BigDecimal Version
+	 * @param stockCode
+	 * @param currentPrice
+	 * @return
+	 */
+	public float calBasis(String stockCode, BigDecimal currentPrice) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 
+	/**
+	 * calDayLoadingUp Float Version
+	 * @param position
+	 * @param preHoldings
+	 * @return
+	 */
 	float calDayLoadingUp(float position, float preHoldings) {
 		// TODO Auto-generated method stub
 		return position - preHoldings;
 	}
+	
+	/**
+	 * calDayLoadingUp BigInteger Version
+	 * @param position
+	 * @param preHoldings
+	 * @return
+	 */
+	public BigInteger calDayLoadingUp(BigInteger position, BigInteger preHoldings) {
+		// TODO Auto-generated method stub
+		if (position == null || preHoldings == null) {
+			System.out.println("IndexDetailsUtil.calDayLoadingUp >>> parameters null");
+			return BigInteger.ZERO;
+		}
+		
+		BigInteger dayLoadingUp = position.subtract(preHoldings);
+		return dayLoadingUp;
+	}
 
+	/**
+	 * calNowHand Float Version
+	 * @param stockCode
+	 * @param datetime
+	 * @param curVolumnCount
+	 * @return
+	 */
 	float calNowHand(String stockCode, Timestamp datetime,
 			float curVolumnCount) {
 		// TODO Auto-generated method stub
 		float prevCumVolume = new RawDataAccess(conn).getPrevCumVolume(stockCode,
-				datetime, "index");
+				datetime, "index").floatValue();
 		return curVolumnCount - prevCumVolume;
 	}
+	
+	/**
+	 * calNowHand BigInteger Version
+	 * @param stockCode
+	 * @param datetime
+	 * @param volumnCount
+	 * @return
+	 */
+	public BigInteger calNowHand(String stockCode, Timestamp datetime,
+			BigInteger curVolumnCount) {
+		// TODO Auto-generated method stub
+		BigInteger prevCumVolume = new RawDataAccess(conn).getPrevCumVolume(stockCode,
+				datetime, "index");
+		BigInteger nowHand = curVolumnCount.subtract(prevCumVolume);
+		return nowHand;
+	}
 
+	/**
+	 * calLoadingUp Float Version
+	 * @param stockCode
+	 * @param datetime
+	 * @param position
+	 * @return
+	 */
 	float calLoadingUp(String stockCode, Timestamp datetime,
 			float position) {
 		// TODO Auto-generated method stub
 		float prevHoldings = new RawDataAccess(conn).getPrevHoldings(stockCode,
-				datetime, "index");
+				datetime, "index").floatValue();
 		return position - prevHoldings;
+	}
+
+	/**
+	 * calLoadingUp BigInteger Version
+	 * @param stockCode
+	 * @param datetime
+	 * @param position
+	 * @return
+	 */
+	public BigInteger calLoadingUp(String stockCode, Timestamp datetime,
+			BigInteger position) {
+		// TODO Auto-generated method stub
+		BigInteger prevHoldings = new RawDataAccess(conn).getPrevHoldings(stockCode,
+				datetime, "index");
+		BigInteger loadingUP = position.subtract(prevHoldings);
+		return loadingUP;
 	}
 
 	float calTradingSentiment(String stockCode, Timestamp datetime) {

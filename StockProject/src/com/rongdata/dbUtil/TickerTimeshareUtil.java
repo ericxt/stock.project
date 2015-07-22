@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,9 +48,9 @@ public class TickerTimeshareUtil {
 		
 		String ticker = null;
 		Timestamp datetime = null;
-		float price = 0;	// 当前价格
+		BigDecimal price = BigDecimal.ZERO;	// 当前价格
 		float hightAndLowRange = 0;
-		float volume = 0;
+		BigInteger volume = BigInteger.ZERO;
 		float positiveEmotions = 0;
 		float tradingSentiment = 0;
 		float windVane = 0;
@@ -66,18 +68,18 @@ public class TickerTimeshareUtil {
 			while (resultSet.next()) {
 				ticker = resultSet.getString("Ticker");
 				datetime = resultSet.getTimestamp("Datetime");
-				price = resultSet.getFloat("CurrentPrice");
+				price = resultSet.getBigDecimal("CurrentPrice");
 				hightAndLowRange = resultSet.getFloat("HightAndLowRange");
-				volume = resultSet.getFloat("Volume");
+				volume = BigInteger.valueOf(resultSet.getLong("Volume"));
 				positiveEmotions = resultSet.getFloat("PositiveEmotions");
 				tradingSentiment = resultSet.getFloat("TradingSentiment");
 				windVane = resultSet.getFloat("WindVane");
 				
 				prestmt.setString(TickerTimeshare.Ticker.ordinal() + 1, ticker);
 				prestmt.setTimestamp(TickerTimeshare.Datetime.ordinal() + 1, datetime);
-				prestmt.setFloat(TickerTimeshare.Price.ordinal() + 1, price);
+				prestmt.setBigDecimal(TickerTimeshare.Price.ordinal() + 1, price);
 				prestmt.setFloat(TickerTimeshare.HightAndLowRange.ordinal() + 1, hightAndLowRange);
-				prestmt.setFloat(TickerTimeshare.Volume.ordinal() + 1, volume);
+				prestmt.setLong(TickerTimeshare.Volume.ordinal() + 1, volume.longValue());
 				prestmt.setFloat(TickerTimeshare.PositiveEmotions.ordinal() + 1, positiveEmotions);
 				prestmt.setFloat(TickerTimeshare.TradingSentiment.ordinal() + 1, tradingSentiment);
 				prestmt.setFloat(TickerTimeshare.WindVane.ordinal() + 1, windVane);

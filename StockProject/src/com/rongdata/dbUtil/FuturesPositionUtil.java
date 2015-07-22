@@ -90,7 +90,7 @@ public class FuturesPositionUtil {
 	}
 
 	// to be completed, there is no rule
-	private float calNature() {
+	float calNature() {
 		// TODO Auto-generated method stub
 		return 0;
 	}

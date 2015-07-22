@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -57,12 +59,12 @@ public class KChartsMonthUtil {
 
 		String ticker = null; // 证券代码
 		Timestamp datetime = null; // 时间
-		float openPrice = 0; // 开盘价
-		float hightPrice = 0; // 最高价格
-		float lowPrice = 0; // 最低价格
-		float closePrice = 0; // 收盘价格
-		float volume = 0; // 累计成交量
-		float amount = 0; // 累计成交金额
+		BigDecimal openPrice = BigDecimal.ZERO; // 开盘价
+		BigDecimal hightPrice = BigDecimal.ZERO; // 最高价格
+		BigDecimal lowPrice = BigDecimal.ZERO; // 最低价格
+		BigDecimal closePrice = BigDecimal.ZERO; // 收盘价格
+		BigInteger volume = BigInteger.ZERO; // 累计成交量
+		BigDecimal amount = BigDecimal.ZERO; // 累计成交金额
 		float tradingSentiment = 0; // 交易情绪
 		float windVane = 0; // 风向标
 		float massOfPublicOpinion = 0; // 大众舆情
@@ -84,11 +86,11 @@ public class KChartsMonthUtil {
 					openPrice = getMonthOpenPrice(ticker, datetime);
 					firstMonthOpenPriceOperation = false;
 				}
-				hightPrice = resultSet.getFloat("HightPrice");
-				lowPrice = resultSet.getFloat("LowPrice");
+				hightPrice = resultSet.getBigDecimal("HightPrice");
+				lowPrice = resultSet.getBigDecimal("LowPrice");
 				closePrice = getMonthClosePrice(ticker, datetime);
-				volume = resultSet.getFloat("Volume");
-				amount = resultSet.getFloat("Amount");
+				volume = BigInteger.valueOf(resultSet.getLong("Volume"));
+				amount = resultSet.getBigDecimal("Amount");
 				tradingSentiment = resultSet.getFloat("TradingSentiment");
 				windVane = resultSet.getFloat("WindVane");
 				massOfPublicOpinion = resultSet.getFloat("MassOfPublicOpinion");
@@ -96,15 +98,15 @@ public class KChartsMonthUtil {
 				prestmt.setString(KChartsMonth.Ticker.ordinal() + 1, ticker);
 				prestmt.setTimestamp(KChartsMonth.Datetime.ordinal() + 1,
 						datetime);
-				prestmt.setFloat(KChartsMonth.OpenPrice.ordinal() + 1,
+				prestmt.setBigDecimal(KChartsMonth.OpenPrice.ordinal() + 1,
 						openPrice);
-				prestmt.setFloat(KChartsMonth.HightPrice.ordinal() + 1,
+				prestmt.setBigDecimal(KChartsMonth.HightPrice.ordinal() + 1,
 						hightPrice);
-				prestmt.setFloat(KChartsMonth.LowPrice.ordinal() + 1, lowPrice);
-				prestmt.setFloat(KChartsMonth.ClosePrice.ordinal() + 1,
+				prestmt.setBigDecimal(KChartsMonth.LowPrice.ordinal() + 1, lowPrice);
+				prestmt.setBigDecimal(KChartsMonth.ClosePrice.ordinal() + 1,
 						closePrice);
-				prestmt.setFloat(KChartsMonth.Volume.ordinal() + 1, volume);
-				prestmt.setFloat(KChartsMonth.Amount.ordinal() + 1, amount);
+				prestmt.setLong(KChartsMonth.Volume.ordinal() + 1, volume.longValue());
+				prestmt.setBigDecimal(KChartsMonth.Amount.ordinal() + 1, amount);
 				prestmt.setFloat(KChartsMonth.TradingSentiment.ordinal() + 1,
 						tradingSentiment);
 				prestmt.setFloat(KChartsMonth.WindVane.ordinal() + 1, windVane);
@@ -121,7 +123,7 @@ public class KChartsMonthUtil {
 		}
 	}
 
-	private float getMonthOpenPrice(String ticker, Timestamp datetime) {
+	private BigDecimal getMonthOpenPrice(String ticker, Timestamp datetime) {
 		// calculate the first weekday of the month
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTimeInMillis(datetime.getTime());
@@ -139,7 +141,7 @@ public class KChartsMonthUtil {
 				+ "' and datetime = subdate(date('"
 				+ datetime
 				+ "'),interval " + (dayOfMonth - 1) + " day)";
-		float openPrice = 0;
+		BigDecimal openPrice = BigDecimal.ZERO;
 
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
@@ -149,20 +151,20 @@ public class KChartsMonthUtil {
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet rest = prestmt.executeQuery();
 			while (rest.next()) {
-				openPrice = rest.getFloat("openprice");
+				openPrice = rest.getBigDecimal("openprice");
 			}
 			return openPrice;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return Float.MIN_NORMAL;
+		return openPrice;
 	}
 
-	private float getMonthClosePrice(String ticker, Timestamp datetime) {
+	private BigDecimal getMonthClosePrice(String ticker, Timestamp datetime) {
 		String sql = "select closeprice from xcube.com_k_charts_day where ticker = '"
 				+ ticker + "' and datetime='" + datetime + "';";
-		float closePrice = 0;
+		BigDecimal closePrice = BigDecimal.ZERO;
 
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
@@ -172,14 +174,14 @@ public class KChartsMonthUtil {
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet rest = prestmt.executeQuery();
 			while (rest.next()) {
-				closePrice = rest.getFloat("closeprice");
+				closePrice = rest.getBigDecimal("closeprice");
 			}
 			return closePrice;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return Float.MIN_NORMAL;
+		return closePrice;
 	}
 
 }

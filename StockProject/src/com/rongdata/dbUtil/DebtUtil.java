@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,11 +48,14 @@ public class DebtUtil {
 				+ "YesterdaySettle, OpenPrice, NowHand, VolumnCount, HighPrice, LowPrice, "
 				+ "LoadingUp, Position, Volume, Turnover, EstimationSettle, OuterDisk, Disk, "
 				+ "TradingSentiment, WindVane, MassOfPublicOpinion) values(?, ?, ?, "
-				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				+ "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 		String propertySql = "insert ignore into xcube.com_debt_property(Ticker, TickerName, "
 				+ "ListingDate, UpdateDate, Validity, Type, SuperFutures) values(?, ?, ?, "
 				+ "?, ?, ?, ?);";
+
+		String positionSql = "replace into xcube.com_futures_position(Ticker, Datetime, "
+				+ "Price, NowHand, LoadingUp, Nature) values(?, ?, ?, ?, ?, ?)";
 
 		// update debt data into kchartsday table
 		String kChartsDaySql = "replace into xcube.com_k_charts_day(Ticker, Datetime, "
@@ -58,40 +63,45 @@ public class DebtUtil {
 				+ "TradingSentiment, WindVane, MassOfPublicOpinion) "
 				+ "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
+		// parameters in debtdetails table
 		String ticker = null; // 期货代码
-		float currentPrice = 0; // 现价
+		BigDecimal currentPrice = BigDecimal.ZERO; // 现价
 		float hightAndLow = 0; // 涨跌
 		float hightAndLowRange = 0; // 涨跌幅
 		float fiveUpdown = 0; // 5日涨跌幅
 		float yearToDate = 0; // 年初至今
 		Timestamp datetime = null; // 时间
-		float yesterdaySettle = 0; // 昨结
-		float openPrice = 0; // 开盘
-		float nowHand = 0; // 现手
-		float volumnCount = 0; // 总手
-		float highPrice = 0; // 最高价
-		float lowPrice = 0; // 最低价
-		float loadingUp = 0; // 增仓
-		float position = 0; // 持仓
-		float volume = 0; // 成交量
-		float turnover = 0; // 成交金额
-		float estimationSettle = 0; // 估结算
-		float outerDisk = 0; // 外盘
-		float disk = 0; // 内盘
+		BigDecimal yesterdaySettle = BigDecimal.ZERO; // 昨结
+		BigDecimal openPrice = BigDecimal.ZERO; // 开盘
+		BigInteger nowHand = BigInteger.ZERO; // 现手
+		BigInteger volumnCount = BigInteger.ZERO; // 总手
+		BigDecimal highPrice = BigDecimal.ZERO; // 最高价
+		BigDecimal lowPrice = BigDecimal.ZERO; // 最低价
+		BigInteger loadingUp = BigInteger.ZERO; // 增仓
+		BigInteger position = BigInteger.ZERO; // 持仓
+		BigInteger volume = BigInteger.ZERO; // 成交量
+		BigDecimal turnover = BigDecimal.ZERO; // 成交金额
+		BigDecimal estimationSettle = BigDecimal.ZERO; // 估结算
+		BigInteger outerDisk = BigInteger.ZERO; // 外盘
+		BigInteger disk = BigInteger.ZERO; // 内盘
 		float tradingSentiment = 0; // 交易情绪
 		float windVane = 0; // 大众舆情
 		float massOfPublicOpinion = 0; // 大众舆情
 
+		// parameters in debtproperty table
 		String tickerName = ticker;
 		Date listingDate = null;
 		Date updateDate = null;
 		int validity = 1;
 		int type = 0;
 		String superFutures = null;
-		
+
+		// parameters in FuturesPosition table
+		float nature = 0;
+
 		// parameters in kchartsday table
-		float closePrice = 0;	// 收盘价格
-		float amount = 0;	// 累计成交金额
+		BigDecimal closePrice = BigDecimal.ZERO; // 收盘价格
+		BigDecimal amount = BigDecimal.ZERO; // 累计成交金额
 
 		if (conn == null) {
 			System.out.println("debtutil.operate >>> reconstruct conn");
@@ -106,10 +116,13 @@ public class DebtUtil {
 					.prepareStatement(detailsSql);
 			PreparedStatement propertyPrestmt = conn
 					.prepareStatement(propertySql);
-			PreparedStatement kChartsDayPrestmt = conn.prepareStatement(kChartsDaySql);
-			
+			PreparedStatement kChartsDayPrestmt = conn
+					.prepareStatement(kChartsDaySql);
+			PreparedStatement positionPrestmt = conn.prepareStatement(positionSql);
+
 			DebtDetailsUtil debtDetailsUtil = new DebtDetailsUtil(conn);
 			DebtPropertyUtil debtPropertyUtil = new DebtPropertyUtil(conn);
+			FuturesPositionUtil futuresPositionUtil = new FuturesPositionUtil(conn);
 
 			if (firstMainTickerOperation) {
 				mainTickerSet = debtPropertyUtil.getMainTicker();
@@ -117,10 +130,11 @@ public class DebtUtil {
 			}
 
 			while (resultSet.next()) {
+				// parameters in debtdetails table
 				ticker = resultSet.getString("ContractId");
 				datetime = resultSet.getTimestamp("TradingTime");
-				currentPrice = resultSet.getFloat("LatestPrice");
-				yesterdaySettle = resultSet.getFloat("PreSettlementPrice");
+				currentPrice = resultSet.getBigDecimal("LatestPrice");
+				yesterdaySettle = resultSet.getBigDecimal("PreSettlementPrice");
 				hightAndLow = debtDetailsUtil.calHightAndLow(currentPrice,
 						yesterdaySettle);
 				hightAndLowRange = debtDetailsUtil.calHightAndLowRange(
@@ -130,18 +144,18 @@ public class DebtUtil {
 						currentPrice, datetime);
 				yearToDate = debtDetailsUtil.calYearToDate(ticker,
 						currentPrice, datetime);
-				openPrice = resultSet.getFloat("CurrOpenPrice");
+				openPrice = resultSet.getBigDecimal("CurrOpenPrice");
 				// volume in market_quotation means cumvolume
-				volumnCount = resultSet.getFloat("Volume");
+				volumnCount = BigInteger.valueOf(resultSet.getLong("Volume"));
 				nowHand = debtDetailsUtil.calNowHand(ticker, datetime,
 						volumnCount);
-				highPrice = resultSet.getFloat("TopPrice");
-				lowPrice = resultSet.getFloat("BottomPrice");
-				position = resultSet.getFloat("Holdings");
+				highPrice = resultSet.getBigDecimal("TopPrice");
+				lowPrice = resultSet.getBigDecimal("BottomPrice");
+				position = BigInteger.valueOf(resultSet.getLong("Holdings"));
 				loadingUp = debtDetailsUtil.calLoadingUp(ticker, datetime,
 						position);
 				volume = nowHand;
-				estimationSettle = resultSet.getFloat("CurrSettlementPRice");
+				estimationSettle = resultSet.getBigDecimal("CurrSettlementPrice");
 				outerDisk = debtDetailsUtil.calOuterDisk(currentPrice,
 						resultSet);
 				disk = debtDetailsUtil.calDisk(currentPrice, resultSet);
@@ -151,6 +165,7 @@ public class DebtUtil {
 				windVane = debtDetailsUtil.calWindVane();
 				massOfPublicOpinion = debtDetailsUtil.calMassOfPublicOpinion();
 
+				// parameters in debtproperty table
 				tickerName = ticker;
 				listingDate = debtPropertyUtil.calListingDate(ticker);
 				updateDate = debtPropertyUtil.calUpdateDate();
@@ -160,9 +175,12 @@ public class DebtUtil {
 				type = (mainTickerSet.contains(ticker)) ? 1 : 0;
 				superFutures = debtPropertyUtil.calSuperFutures();
 				
+				// parameters in FuturesPosition table
+				nature = futuresPositionUtil.calNature();
+
 				// parameters in kchartsday table
 				closePrice = currentPrice;
-				amount = resultSet.getFloat("TurnOver");
+				amount = resultSet.getBigDecimal("TurnOver");
 
 				// set the value in debtDetails
 				System.out.println(resultSet.getRow()
@@ -177,7 +195,7 @@ public class DebtUtil {
 						+ "," + massOfPublicOpinion);
 				detailsPrestmt.setString(DebtDetails.Ticker.ordinal() + 1,
 						ticker);
-				detailsPrestmt.setFloat(DebtDetails.CurrentPrice.ordinal() + 1,
+				detailsPrestmt.setBigDecimal(DebtDetails.CurrentPrice.ordinal() + 1,
 						currentPrice);
 				detailsPrestmt.setFloat(DebtDetails.HightAndLow.ordinal() + 1,
 						hightAndLow);
@@ -190,33 +208,33 @@ public class DebtUtil {
 						yearToDate);
 				detailsPrestmt.setTimestamp(DebtDetails.Datetime.ordinal() + 1,
 						datetime);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						DebtDetails.YesterdaySettle.ordinal() + 1,
 						yesterdaySettle);
-				detailsPrestmt.setFloat(DebtDetails.OpenPrice.ordinal() + 1,
+				detailsPrestmt.setBigDecimal(DebtDetails.OpenPrice.ordinal() + 1,
 						openPrice);
-				detailsPrestmt.setFloat(DebtDetails.NowHand.ordinal() + 1,
-						nowHand);
-				detailsPrestmt.setFloat(DebtDetails.VolumnCount.ordinal() + 1,
-						volumnCount);
-				detailsPrestmt.setFloat(DebtDetails.HighPrice.ordinal() + 1,
+				detailsPrestmt.setLong(DebtDetails.NowHand.ordinal() + 1,
+						nowHand.longValue());
+				detailsPrestmt.setLong(DebtDetails.VolumnCount.ordinal() + 1,
+						volumnCount.longValue());
+				detailsPrestmt.setBigDecimal(DebtDetails.HighPrice.ordinal() + 1,
 						highPrice);
-				detailsPrestmt.setFloat(DebtDetails.LowPrice.ordinal() + 1,
+				detailsPrestmt.setBigDecimal(DebtDetails.LowPrice.ordinal() + 1,
 						lowPrice);
-				detailsPrestmt.setFloat(DebtDetails.LoadingUp.ordinal() + 1,
-						loadingUp);
-				detailsPrestmt.setFloat(DebtDetails.Position.ordinal() + 1,
-						position);
-				detailsPrestmt.setFloat(DebtDetails.Volume.ordinal() + 1,
-						volume);
-				detailsPrestmt.setFloat(DebtDetails.Turnover.ordinal() + 1,
+				detailsPrestmt.setLong(DebtDetails.LoadingUp.ordinal() + 1,
+						loadingUp.longValue());
+				detailsPrestmt.setLong(DebtDetails.Position.ordinal() + 1,
+						position.longValue());
+				detailsPrestmt.setLong(DebtDetails.Volume.ordinal() + 1,
+						volume.longValue());
+				detailsPrestmt.setBigDecimal(DebtDetails.Turnover.ordinal() + 1,
 						turnover);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						DebtDetails.EstimationSettle.ordinal() + 1,
 						estimationSettle);
-				detailsPrestmt.setFloat(DebtDetails.OuterDisk.ordinal() + 1,
-						outerDisk);
-				detailsPrestmt.setFloat(DebtDetails.Disk.ordinal() + 1, disk);
+				detailsPrestmt.setLong(DebtDetails.OuterDisk.ordinal() + 1,
+						outerDisk.longValue());
+				detailsPrestmt.setLong(DebtDetails.Disk.ordinal() + 1, disk.longValue());
 				detailsPrestmt.setFloat(
 						DebtDetails.TradingSentiment.ordinal() + 1,
 						tradingSentiment);
@@ -245,21 +263,43 @@ public class DebtUtil {
 				propertyPrestmt.setString(
 						DebtProperty.SuperFutures.ordinal() + 1, superFutures);
 				
+				// set the values in futuresposition table
+				positionPrestmt.setString(FuturesPosition.Ticker.ordinal() + 1, ticker);
+				positionPrestmt.setTimestamp(FuturesPosition.Datetime.ordinal() + 1, datetime);
+				positionPrestmt.setBigDecimal(FuturesPosition.Price.ordinal() + 1, currentPrice);
+				positionPrestmt.setLong(FuturesPosition.NowHand.ordinal() + 1, nowHand.longValue());
+				positionPrestmt.setLong(FuturesPosition.LoadingUp.ordinal() + 1, loadingUp.longValue());
+				positionPrestmt.setFloat(FuturesPosition.Nature.ordinal() + 1, nature);
+
 				// set the values in kchartsday table
-				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1, ticker);
-				kChartsDayPrestmt.setTimestamp(KChartsDay.Datetime.ordinal() + 1, datetime);
-				kChartsDayPrestmt.setFloat(KChartsDay.OpenPrice.ordinal() + 1, openPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.HightPrice.ordinal() + 1, highPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.LowPrice.ordinal() + 1, lowPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.ClosePrice.ordinal() + 1, closePrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.Volume.ordinal() + 1, volume);
-				kChartsDayPrestmt.setFloat(KChartsDay.Amount.ordinal() + 1, amount);
-				kChartsDayPrestmt.setFloat(KChartsDay.TradingSentiment.ordinal() + 1, tradingSentiment);
-				kChartsDayPrestmt.setFloat(KChartsDay.WindVane.ordinal() + 1, windVane);
-				kChartsDayPrestmt.setFloat(KChartsDay.MassOfPublicOpinion.ordinal() + 1, massOfPublicOpinion);
+				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1,
+						ticker);
+				kChartsDayPrestmt.setTimestamp(
+						KChartsDay.Datetime.ordinal() + 1, datetime);
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.OpenPrice.ordinal() + 1,
+						openPrice);
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.HightPrice.ordinal() + 1,
+						highPrice);
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.LowPrice.ordinal() + 1,
+						lowPrice);
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.ClosePrice.ordinal() + 1,
+						closePrice);
+				kChartsDayPrestmt.setLong(KChartsDay.Volume.ordinal() + 1,
+						volume.longValue());
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.Amount.ordinal() + 1,
+						amount);
+				kChartsDayPrestmt.setFloat(
+						KChartsDay.TradingSentiment.ordinal() + 1,
+						tradingSentiment);
+				kChartsDayPrestmt.setFloat(KChartsDay.WindVane.ordinal() + 1,
+						windVane);
+				kChartsDayPrestmt.setFloat(
+						KChartsDay.MassOfPublicOpinion.ordinal() + 1,
+						massOfPublicOpinion);
 
 				detailsPrestmt.execute();
 				propertyPrestmt.execute();
+				positionPrestmt.execute();
 				kChartsDayPrestmt.execute();
 			}
 

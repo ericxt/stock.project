@@ -1,20 +1,16 @@
 package com.rongdata.dbUtil;
 
-import java.util.Calendar;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class Test {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Calendar calendar = Calendar.getInstance();
-		int dayofmonth = calendar.get(Calendar.DAY_OF_MONTH);
-		System.out.println(dayofmonth);
-		calendar.set(Calendar.DAY_OF_MONTH, 4);
-		int dayofweek = calendar.get(Calendar.DAY_OF_WEEK);
-		if (dayofweek == 0) {
-			calendar.set(Calendar.DAY_OF_MONTH, 2);
-		} else if (dayofweek == 7) {
-			calendar.set(Calendar.DAY_OF_MONTH, 3);
-		}
-		System.out.println(calendar.getTime());
+		String str = "123445678786968689";
+		BigInteger bigInteger = new BigInteger(str);
+		System.out.println(bigInteger);
+//		BigDecimal bigDecimal = new BigDecimal(str);
+//		bigDecimal = bigDecimal.setScale(1, BigDecimal.ROUND_HALF_DOWN);
+//		System.out.println(bigDecimal);
 	}
 }

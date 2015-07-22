@@ -92,7 +92,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "FuturesThread");
 		futuresThread.start();
 
 		// debtThread
@@ -135,7 +135,7 @@ class StockHandleTask extends TimerTask {
 				}
 
 			}
-		});
+		}, "DebtThread");
 		debtThread.start();
 
 		// indexThread
@@ -177,7 +177,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "IndexThread");
 		indexThread.start();
 
 		// stockThread
@@ -219,7 +219,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "StockThread");
 		stockThread.start();
 
 		// tickerTimeShareThread
@@ -261,7 +261,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "TickerTimeShareThread");
 		timeShareThread.start();
 
 		// kChartsWeekThread
@@ -303,7 +303,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "KChartsWeekThread");
 		kChartsWeekThread.start();
 
 		// kChartsMonthThread
@@ -345,7 +345,7 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 			}
-		});
+		}, "KChartsMonthThread");
 		kChartsMonthThread.start();
 	}
 

@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,7 +45,7 @@ public class RawDataAccess {
 	}
 
 	// extract settlement price from settlePrice table
-	public float getNDaysBeforePrice(String ticker, Date datetime, int daysCount) {
+	public BigDecimal getNDaysBeforePrice(String ticker, Date datetime, int daysCount) {
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
 		}
@@ -61,7 +63,7 @@ public class RawDataAccess {
 			prestmt = conn.prepareStatement(sql);
 			ResultSet rtst = prestmt.executeQuery();
 			while (rtst.next()) {
-				float settlePrice = rtst.getFloat("preSettlePrice");
+				BigDecimal settlePrice = rtst.getBigDecimal("preSettlePrice");
 				System.out.println(settlePrice);
 				return settlePrice;
 			}
@@ -69,10 +71,10 @@ public class RawDataAccess {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return 0;
+		return BigDecimal.ZERO;
 	}
 
-	public float getPrevCumVolume(String ticker, Timestamp datetime,
+	public BigInteger getPrevCumVolume(String ticker, Timestamp datetime,
 			String tickerType) {
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
@@ -110,19 +112,19 @@ public class RawDataAccess {
 			}
 
 			ResultSet rest = prestmt.executeQuery();
-			int preCumVolume = 0;
+			BigInteger preCumVolume = BigInteger.ZERO;
 			while (rest.next()) {
-				preCumVolume = rest.getInt("Volume");
+				preCumVolume = BigInteger.valueOf(rest.getLong("Volume"));
 			}
 			return preCumVolume;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return Float.MIN_NORMAL;
+		return null;
 	}
 
-	public float getPrevHoldings(String ticker, Timestamp datetime,
+	public BigInteger getPrevHoldings(String ticker, Timestamp datetime,
 			String tickerType) {
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
@@ -161,16 +163,16 @@ public class RawDataAccess {
 			}
 
 			ResultSet rest = prestmt.executeQuery();
-			int prevHoldings = 0;
+			BigInteger prevHoldings = BigInteger.ZERO;
 			while (rest.next()) {
-				prevHoldings = rest.getInt("Holdings");
+				prevHoldings = BigInteger.valueOf(rest.getLong("Holdings"));
 			}
 			return prevHoldings;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return 0;
+		return null;
 	}
 
 	public ResultSet getStockComment(String sql) {
@@ -206,7 +208,7 @@ public class RawDataAccess {
 		return null;
 	}
 
-	public float getPastNDaysCumVolume(String ticker, Timestamp datetime,
+	public BigInteger getPastNDaysCumVolume(String ticker, Timestamp datetime,
 			int daysCount) {
 		// TODO Auto-generated method stub
 		// String sql =
@@ -225,8 +227,8 @@ public class RawDataAccess {
 				+ ticker
 				+ "' and date_sub(date('"
 				+ datetime
-				+ "'), interval 6 day) < date(tradingtime) and date('"
-				+ datetime + "') > date(tradingtime);";
+				+ "'), interval 6 day) < tradingdate and date('"
+				+ datetime + "') > tradingdate;";
 
 		if (conn == null) {
 			System.out
@@ -237,16 +239,16 @@ public class RawDataAccess {
 		try {
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet resultSet = prestmt.executeQuery();
-			float cumVolume = 0;
+			BigInteger cumVolume = BigInteger.ZERO;
 			while (resultSet.next()) {
-				cumVolume = resultSet.getFloat("cumVolume");
+				cumVolume = BigInteger.valueOf(resultSet.getLong("cumVolume"));
 			}
 			return cumVolume;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return 0;
+		return null;
 	}
 
 }

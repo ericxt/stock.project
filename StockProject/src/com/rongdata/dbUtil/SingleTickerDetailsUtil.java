@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,7 +18,7 @@ public class SingleTickerDetailsUtil {
 	private Connection conn = null;
 	private ResultSet resultSet = null;
 	private boolean firstVolumeRatioOperation = true;
-	private float pastFiveDaysCumVolume = Float.MIN_VALUE;
+	private BigInteger pastFiveDaysCumVolume = BigInteger.ZERO;
 
 	public SingleTickerDetailsUtil() {
 		// TODO Auto-generated constructor stub
@@ -179,11 +181,46 @@ public class SingleTickerDetailsUtil {
 
 	}
 
+	/**
+	 * calHightAndLow Float Version
+	 * 
+	 * @param currentPrice
+	 * @param yesterdayReceived
+	 * @return
+	 */
 	float calHightAndLow(float currentPrice, float yesterdayReceived) {
 		// TODO Auto-generated method stub
 		return currentPrice - yesterdayReceived;
 	}
 
+	/**
+	 * calHightAndLow BigDecimal Version
+	 * 
+	 * @param currentPrice
+	 * @param yesterdayReceived
+	 * @return
+	 */
+	public float calHightAndLow(BigDecimal currentPrice,
+			BigDecimal yesterdayReceived) {
+		// TODO Auto-generated method stub
+		if (currentPrice == null || yesterdayReceived == null) {
+			System.out
+					.println("SingleTickerDetailsUtil.calHightAndLow >>> parameters null");
+			return 0;
+		}
+
+		BigDecimal hightAndLow = currentPrice.subtract(yesterdayReceived)
+				.setScale(2, BigDecimal.ROUND_HALF_DOWN);
+		return hightAndLow.floatValue();
+	}
+
+	/**
+	 * calHightAndLowRange Float Version
+	 * 
+	 * @param currentPrice
+	 * @param yesterdayReceived
+	 * @return
+	 */
 	float calHightAndLowRange(float currentPrice, float yesterdayReceived) {
 		// TODO Auto-generated method stub
 		if (yesterdayReceived != 0) {
@@ -193,23 +230,89 @@ public class SingleTickerDetailsUtil {
 		}
 	}
 
+	/**
+	 * calHightAndLowRange BigDecimal Version
+	 * 
+	 * @param currentPrice
+	 * @param yesterdayReceived
+	 * @return
+	 */
+	public float calHightAndLowRange(BigDecimal currentPrice,
+			BigDecimal yesterdayReceived) {
+		// TODO Auto-generated method stub
+		if (currentPrice == null || yesterdayReceived == null) {
+			System.out
+					.println("SingleTickerDetailsUtil.calHightAndLowRange >>> parameters null");
+		}
+		if (yesterdayReceived.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal hightAndLowRange = currentPrice.subtract(
+					yesterdayReceived).divide(yesterdayReceived, 2,
+					BigDecimal.ROUND_HALF_DOWN);
+			return hightAndLowRange.floatValue();
+		} else {
+			return Float.MAX_VALUE;
+		}
+	}
+
 	// to be completed, lack of outstanding shares
+	/**
+	 * calTurnoverRate Float Version
+	 * 
+	 * @param volume
+	 * @return
+	 */
 	float calTurnoverRate(float volume) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
+	/**
+	 * calTurnoverRate BigInteger Version
+	 * 
+	 * @param volume
+	 * @return
+	 */
+	public float calTurnoverRate(BigInteger volume) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 	// to be completed, lack of EPS
+	/**
+	 * calPriceEarningsRatio Float Version
+	 * 
+	 * @param currentPrice
+	 * @return
+	 */
 	float calPriceEarningsRatio(float currentPrice) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
+	/**
+	 * calPriceEarningsRatio BigDecimal Version
+	 * 
+	 * @param currentPrice
+	 * @return
+	 */
+	public float calPriceEarningsRatio(BigDecimal currentPrice) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	/**
+	 * calVolumeRatio Float Version
+	 * 
+	 * @param ticker
+	 * @param datetime
+	 * @param curCumVolume
+	 * @return
+	 */
 	float calVolumeRatio(String ticker, Timestamp datetime, float curCumVolume) {
 		// TODO Auto-generated method stub
 		int daysCount = 5;
-		if (firstVolumeRatioOperation  ) {
-			pastFiveDaysCumVolume  = new RawDataAccess(conn)
+		if (firstVolumeRatioOperation) {
+			pastFiveDaysCumVolume = new RawDataAccess(conn)
 					.getPastNDaysCumVolume(ticker, datetime, daysCount);
 			firstVolumeRatioOperation = false;
 		}
@@ -225,15 +328,79 @@ public class SingleTickerDetailsUtil {
 		} else if (hourOfDay >= 13 && hourOfDay < 15) {
 			curCumMinutes += (hourOfDay - 13 + 2) * 60 + minutes;
 		}
-		if (pastFiveDaysCumVolume != 0 || pastFiveDaysCumVolume != Float.MIN_VALUE) {
+		// System.out.println("singletickerdetailsutil.calvolumeratio >>> " +
+		// pastFiveDaysCumVolume);
+		if (pastFiveDaysCumVolume.floatValue() != 0
+				&& pastFiveDaysCumVolume != null) {
+			// System.out.println("singletickerdetailsutil.calvolumeratio >>> enter if clause, result");
 			return (curCumVolume / curCumMinutes)
-					/ (pastFiveDaysCumVolume / (5 * 240));
+					/ (pastFiveDaysCumVolume.floatValue() / (5 * 240));
 		}
-		return Float.MAX_VALUE;
+		// return Float.MAX_VALUE;
+		return 0;
+	}
+
+	/**
+	 * calVolumeRatio BigInteger Version
+	 * 
+	 * @param ticker
+	 * @param datetime
+	 * @param volume
+	 * @return
+	 */
+	public float calVolumeRatio(String ticker, Timestamp datetime,
+			BigInteger curCumVolume) {
+		// TODO Auto-generated method stub
+		int daysCount = 5;
+		if (firstVolumeRatioOperation) {
+			pastFiveDaysCumVolume = new RawDataAccess(conn)
+					.getPastNDaysCumVolume(ticker, datetime, daysCount);
+			firstVolumeRatioOperation = false;
+		}
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTimeInMillis(datetime.getTime());
+		int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
+		int minutes = calendar.get(Calendar.MINUTE);
+		int curCumMinutes = 0;
+		if (hourOfDay == 9) {
+			curCumMinutes += minutes - 30;
+		} else if (hourOfDay > 9 && hourOfDay < 12) {
+			curCumMinutes += (hourOfDay - 9) * 60 + minutes;
+		} else if (hourOfDay >= 13 && hourOfDay < 15) {
+			curCumMinutes += (hourOfDay - 13 + 2) * 60 + minutes;
+		}
+		// System.out.println("singletickerdetailsutil.calvolumeratio >>> " +
+		// pastFiveDaysCumVolume);
+		if (pastFiveDaysCumVolume.compareTo(BigInteger.ZERO) != 0
+				&& pastFiveDaysCumVolume != null) {
+			// System.out.println("singletickerdetailsutil.calvolumeratio >>> enter if clause, result");
+			BigInteger volumeRatio = curCumVolume
+					.multiply(BigInteger.valueOf(5 * 240))
+					.divide(BigInteger.valueOf(curCumMinutes))
+					.divide(pastFiveDaysCumVolume);
+			return volumeRatio.floatValue();
+		}
+		// return Float.MAX_VALUE;
+		return 0;
 	}
 
 	// to be completed, lack of BPS
+	/**
+	 * calPriceToBook Float Version
+	 * @param currentPrice
+	 * @return
+	 */
 	float calPriceToBook(float currentPrice) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	/**
+	 * calPriceToBook BigDecimal Version
+	 * @param currentPrice
+	 * @return
+	 */
+	public float calPriceToBook(BigDecimal currentPrice) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -258,15 +425,45 @@ public class SingleTickerDetailsUtil {
 	}
 
 	// to be completed, lack of total shares
+	/**
+	 * calTotalMarketValue Float Version
+	 * @param currentPrice
+	 * @return
+	 */
 	float calTotalMarketValue(float currentPrice) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
+	
+	/**
+	 * calTotalMarketValue BigDecimal Version
+	 * @param currentPrice
+	 * @return
+	 */
+	public BigDecimal calTotalMarketValue(BigDecimal currentPrice) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 	// to be completed, lack of outstanding shares
+	/**
+	 * calCirculationValue Float Version
+	 * @param currentPrice
+	 * @return
+	 */
 	float calCirculationValue(float currentPrice) {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	/**
+	 * calCirculationValue BigDecimal Version
+	 * @param currentPrice
+	 * @return
+	 */
+	public BigDecimal calCirculationValue(BigDecimal currentPrice) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

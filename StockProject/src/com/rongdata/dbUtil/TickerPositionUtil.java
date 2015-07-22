@@ -1,5 +1,6 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -90,11 +91,32 @@ public class TickerPositionUtil {
 
 	}
 
+	/**
+	 * calNowHand Float Version
+	 * @param ticker
+	 * @param datetime
+	 * @param curVolumeCount
+	 * @return
+	 */
 	float calNowHand(String ticker, Timestamp datetime,
 			float curVolumeCount) {
 		// TODO Auto-generated method stub
-		float prevCumVolume = new RawDataAccess(conn).getPrevCumVolume(ticker, datetime, "stock");
+		float prevCumVolume = new RawDataAccess(conn).getPrevCumVolume(ticker, datetime, "stock").floatValue();
 		return curVolumeCount - prevCumVolume;
+	}
+
+	/**
+	 * calNowHand BigInteger Version
+	 * @param stockCode
+	 * @param datetime
+	 * @param volume
+	 * @return
+	 */
+	public BigInteger calNowHand(String ticker, Timestamp datetime,
+			BigInteger curVolumeCount) {
+		// TODO Auto-generated method stub
+		BigInteger prevCumVolume = new RawDataAccess(conn).getPrevCumVolume(ticker, datetime, "stock");
+		return curVolumeCount.subtract(prevCumVolume);
 	}
 
 }

@@ -1,5 +1,7 @@
 package com.rongdata.dbUtil;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -36,7 +38,7 @@ public class StockUtil {
 				+ "where TradingTime=(select TradingTime from xcube.latest_stock_tradingtime "
 				+ "where a.ContractId=contractid)) as b group by contractid";
 
-		String detailsSql = "insert ignore into xcube.com_single_ticker_details(StockCode, "
+		String detailsSql = "replace into xcube.com_single_ticker_details(StockCode, "
 				+ "Datetime, CurrentPrice, HightAndLow, HightAndLowRange, YesterdayReceived, "
 				+ "TodayOpenPrice, Volume, Turnover, TurnoverRate, HightPrice, LowPrice, "
 				+ "AveragePrice, PriceEarningsRatio, VolumeCount, VolumeRatio, PriceToBook, "
@@ -44,7 +46,7 @@ public class StockUtil {
 				+ "CirculationValue) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
 				+ "?, ?, ?, ?, ?);";
 
-		String PropertySql = "insert ignore into xcube.com_single_ticker_property(TickerName, "
+		String PropertySql = "replace into xcube.com_single_ticker_property(TickerName, "
 				+ "TickerCode, ListingDate, UpdateDate, Validity) values(?, ?, ?, ?, ?)";
 
 		String positionSql = "replace into xcube.com_ticker_position(Ticker, Datetime, "
@@ -58,26 +60,26 @@ public class StockUtil {
 
 		String stockCode = null; // 证券代码
 		Timestamp datetime = null; // 时间
-		float currentPrice = 0; // 当前价格
+		BigDecimal currentPrice = BigDecimal.ZERO; // 当前价格
 		float hightAndLow = 0; // 涨跌
 		float hightAndLowRange = 0; // 涨跌幅
-		float yesterdayReceived = 0; // 昨收
-		float todayOpenPrice = 0; // 今开
-		float volume = 0; // 成交量
-		float turnover = 0; // 成交额
+		BigDecimal yesterdayReceived = BigDecimal.ZERO; // 昨收
+		BigDecimal todayOpenPrice = BigDecimal.ZERO; // 今开
+		BigInteger volume = BigInteger.ZERO; // 成交量
+		BigDecimal turnover = BigDecimal.ZERO; // 成交额
 		float turnoverRate = 0; // 换手率
-		float hightPrice = 0; // 最高价
-		float lowPrice = 0; // 最低价
-		float averagePrice = 0; // 平均价
+		BigDecimal hightPrice = BigDecimal.ZERO; // 最高价
+		BigDecimal lowPrice = BigDecimal.ZERO; // 最低价
+		BigDecimal averagePrice = BigDecimal.ZERO; // 平均价
 		float priceEarningsRatio = 0; // 市盈率
-		float volumeCount = 0; // 总手
+		BigInteger volumeCount = BigInteger.ZERO; // 总手
 		float volumeRatio = 0; // 量比
 		float priceToBook = 0; // 市净率
 		float tradingSentiment = 0; // 交易情绪
 		float windVane = 0; // 风向标
 		float massOfPublicOpinion = 0; // 大众舆情
-		float totalMarketValue = 0; // 总市值
-		float circulationValue = 0; // 流通值
+		BigDecimal totalMarketValue = BigDecimal.ZERO; // 总市值
+		BigDecimal circulationValue = BigDecimal.ZERO; // 流通值
 
 		String tickerName = null; // 股票名称
 		String tickerCode = null; // 股票代码
@@ -85,11 +87,11 @@ public class StockUtil {
 		Date updateDate = null; // 更新日期
 		int validity = 1; // 1有效 0无效
 
-		float nowHand = 0;
+		BigInteger nowHand = BigInteger.ZERO;
 
 		// parameters in kchartsday table
-		float closePrice = 0; // 收盘价格
-		float amount = 0; // 累计成交金额
+		BigDecimal closePrice = BigDecimal.ZERO; // 收盘价格
+		BigDecimal amount = BigDecimal.ZERO; // 累计成交金额
 
 		if (conn == null) {
 			System.out.println("StockUtil.operate >>> reconstruct conn");
@@ -118,19 +120,19 @@ public class StockUtil {
 				// parameters in SingleTickerDetails table
 				stockCode = resultSet.getString("ContractId");
 				datetime = resultSet.getTimestamp("TradingTime");
-				currentPrice = resultSet.getFloat("LatestPrice");
-				yesterdayReceived = resultSet.getFloat("PreClosePrice");
+				currentPrice = resultSet.getBigDecimal("LatestPrice");
+				yesterdayReceived = resultSet.getBigDecimal("PreClosePrice");
 				hightAndLow = singleTickerDetailsUtil.calHightAndLow(
 						currentPrice, yesterdayReceived);
 				hightAndLowRange = singleTickerDetailsUtil.calHightAndLowRange(
 						currentPrice, yesterdayReceived);
-				todayOpenPrice = resultSet.getFloat("CurrOpenPrice");
-				volume = resultSet.getInt("Volume");
-				turnover = resultSet.getFloat("TurnOver");
+				todayOpenPrice = resultSet.getBigDecimal("CurrOpenPrice");
+				volume = BigInteger.valueOf(resultSet.getLong("Volume"));
+				turnover = resultSet.getBigDecimal("TurnOver");
 				turnoverRate = singleTickerDetailsUtil.calTurnoverRate(volume);
-				hightPrice = resultSet.getFloat("TopPrice");
-				lowPrice = resultSet.getFloat("BottomPrice");
-				averagePrice = resultSet.getFloat("AveragePrice");
+				hightPrice = resultSet.getBigDecimal("TopPrice");
+				lowPrice = resultSet.getBigDecimal("BottomPrice");
+				averagePrice = resultSet.getBigDecimal("AveragePrice");
 				priceEarningsRatio = singleTickerDetailsUtil
 						.calPriceEarningsRatio(currentPrice);
 				volumeCount = volume;
@@ -182,7 +184,7 @@ public class StockUtil {
 						SingleTickerDetails.StockCode.ordinal() + 1, stockCode);
 				detailsPrestmt.setTimestamp(
 						SingleTickerDetails.Datetime.ordinal() + 1, datetime);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.CurrentPrice.ordinal() + 1,
 						currentPrice);
 				detailsPrestmt.setFloat(
@@ -191,33 +193,33 @@ public class StockUtil {
 				detailsPrestmt.setFloat(
 						SingleTickerDetails.HightAndLowRange.ordinal() + 1,
 						hightAndLowRange);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.YesterdayReceived.ordinal() + 1,
 						yesterdayReceived);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.TodayOpenPrice.ordinal() + 1,
 						todayOpenPrice);
-				detailsPrestmt.setFloat(
-						SingleTickerDetails.Volume.ordinal() + 1, volume);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setLong(
+						SingleTickerDetails.Volume.ordinal() + 1, volume.longValue());
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.Turnover.ordinal() + 1, turnover);
 				detailsPrestmt.setFloat(
 						SingleTickerDetails.TurnoverRate.ordinal() + 1,
 						turnoverRate);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.HightPrice.ordinal() + 1,
 						hightPrice);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.LowPrice.ordinal() + 1, lowPrice);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.AveragePrice.ordinal() + 1,
 						averagePrice);
 				detailsPrestmt.setFloat(
 						SingleTickerDetails.PriceEarningsRatio.ordinal() + 1,
 						priceEarningsRatio);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setLong(
 						SingleTickerDetails.VolumeCount.ordinal() + 1,
-						volumeCount);
+						volumeCount.longValue());
 				detailsPrestmt.setFloat(
 						SingleTickerDetails.VolumeRatio.ordinal() + 1,
 						volumeRatio);
@@ -232,10 +234,10 @@ public class StockUtil {
 				detailsPrestmt.setFloat(
 						SingleTickerDetails.MassOfPublicOpinion.ordinal() + 1,
 						massOfPublicOpinion);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.TotalMarketValue.ordinal() + 1,
 						totalMarketValue);
-				detailsPrestmt.setFloat(
+				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.CirculationValue.ordinal() + 1,
 						circulationValue);
 
@@ -264,27 +266,27 @@ public class StockUtil {
 						stockCode);
 				positionPrestmt.setTimestamp(
 						TickerPosition.Datetime.ordinal() + 1, datetime);
-				positionPrestmt.setFloat(TickerPosition.Price.ordinal() + 1,
+				positionPrestmt.setBigDecimal(TickerPosition.Price.ordinal() + 1,
 						currentPrice);
-				positionPrestmt.setFloat(TickerPosition.NowHand.ordinal() + 1,
-						nowHand);
+				positionPrestmt.setLong(TickerPosition.NowHand.ordinal() + 1,
+						nowHand.longValue());
 				
 				// set the values in kchartsday table
 				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1,
 						stockCode);
 				kChartsDayPrestmt.setTimestamp(
 						KChartsDay.Datetime.ordinal() + 1, datetime);
-				kChartsDayPrestmt.setFloat(KChartsDay.OpenPrice.ordinal() + 1,
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.OpenPrice.ordinal() + 1,
 						todayOpenPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.HightPrice.ordinal() + 1,
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.HightPrice.ordinal() + 1,
 						hightPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.LowPrice.ordinal() + 1,
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.LowPrice.ordinal() + 1,
 						lowPrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.ClosePrice.ordinal() + 1,
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.ClosePrice.ordinal() + 1,
 						closePrice);
-				kChartsDayPrestmt.setFloat(KChartsDay.Volume.ordinal() + 1,
-						volume);
-				kChartsDayPrestmt.setFloat(KChartsDay.Amount.ordinal() + 1,
+				kChartsDayPrestmt.setLong(KChartsDay.Volume.ordinal() + 1,
+						volume.longValue());
+				kChartsDayPrestmt.setBigDecimal(KChartsDay.Amount.ordinal() + 1,
 						amount);
 				kChartsDayPrestmt.setFloat(
 						KChartsDay.TradingSentiment.ordinal() + 1,
