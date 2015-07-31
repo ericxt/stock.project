@@ -24,13 +24,13 @@ public class TradingSentimentAccess {
 		String sql = "select tradingsentiment from xcube.com_trading_sentiment where ticker = '"
 				+ ticker + "' and tradingtime = '" + datetime + "';";
 		
-		System.out.println("TradingSentimentAccess.gettradingsentiment >>> " + sql);
+		System.out.println("  >>> TradingSentimentAccess.gettradingsentiment >>> " + sql);
 		try {
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet rest = prestmt.executeQuery();
 			float tradingSentiment = 0;
 			while (rest.next()) {
-				tradingSentiment = rest.getFloat("TAIndex");
+				tradingSentiment = rest.getFloat("TradingSentiment");
 			}
 			return tradingSentiment;
 		} catch (SQLException e) {

@@ -105,9 +105,13 @@ public class DebtPropertyUtil {
 //				+ "where contractid rlike '^(TF|T)[0-9].*' order by tradingtime<=now(),"
 //				+ "tradingtime desc) as a group by contractid;";
 		
-		String sql = "select * from (select ContractId, PreHoldings from xcube.debt_quotation as a "
-				+ "where TradingTime=(select TradingTime from xcube.latest_debt_tradingtime "
-				+ "where a.ContractId=contractid)) as b group by contractid";
+//		String sql = "select * from (select ContractId, PreHoldings from xcube.debt_quotation as a "
+//				+ "where TradingTime=(select TradingTime from xcube.latest_debt_tradingtime "
+//				+ "where a.ContractId=contractid)) as b group by contractid";
+		
+		String sql = "select ContractId, PreHoldings from "
+				+ "(select ContractId, PreHoldings from xcube.debt_quotation "
+				+ "order by tradingtime desc) as a group by contractid;";
 		HashSet<String> mainTickerSet = new HashSet<String>();
 		String mainTTicker = null;
 		String mainTFTicker = null;

@@ -7,12 +7,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 
 import com.mysql.jdbc.Connection;
 
 public class FuturesUtil {
 	private Connection conn = null;
 	private ResultSet resultSet = null;
+
+	PreparedStatement detailsPrestmt = null;
+	private PreparedStatement propertyPrestmt = null;
+	private PreparedStatement kChartsDayPrestmt = null;
+	private PreparedStatement positionPrestmt = null;
+	
+	private HashMap<String, ArrayList<BigDecimal>> tickerPreSettleMap = new HashMap<String, ArrayList<BigDecimal>>();
 
 	public Connection getConn() {
 		return conn;
@@ -48,13 +58,29 @@ public class FuturesUtil {
 	}
 
 	public void operate() {
-		String sourceSql = "select * from (select TradingTime, ContractId, PreSettlementPrice, "
-				+ "CurrSettlementPrice, CurrOpenPrice, PreHoldings, Holdings, LatestPrice, Volume, "
-				+ "Turnover, TopPrice, BottomPrice, BidPrice1, AskPrice1, BidVolume1, AskVolume1, "
-				+ "BidPrice2, AskPrice2, BidVolume2, AskVolume2, BidPrice3, AskPrice3, "
-				+ "BidVolume3, AskVolume3 from xcube.futures_quotation as a "
-				+ "where TradingTime=(select TradingTime from xcube.latest_futures_tradingtime "
-				+ "where a.ContractId=contractid)) as b group by contractid";
+		// String sourceSql =
+		// "select * from (select TradingTime, ContractId, PreSettlementPrice, "
+		// +
+		// "CurrSettlementPrice, CurrOpenPrice, PreHoldings, Holdings, LatestPrice, Volume, "
+		// +
+		// "Turnover, TopPrice, BottomPrice, BidPrice1, AskPrice1, BidVolume1, AskVolume1, "
+		// +
+		// "BidPrice2, AskPrice2, BidVolume2, AskVolume2, BidPrice3, AskPrice3, "
+		// + "BidVolume3, AskVolume3 from xcube.futures_quotation as a "
+		// +
+		// "where TradingTime=(select TradingTime from xcube.latest_futures_tradingtime "
+		// + "where a.ContractId=contractid)) as b group by contractid";
+
+		String sourceSql = "select TradingTime, ContractId, PreSettlementPrice, CurrSettlementPrice, "
+				+ "CurrOpenPrice, PreHoldings, Holdings, LatestPrice, Volume, Turnover, TopPrice, "
+				+ "BottomPrice, BidPrice1, AskPrice1, BidVolume1, AskVolume1, BidPrice2, AskPrice2, "
+				+ "BidVolume2, AskVolume2, BidPrice3, AskPrice3, BidVolume3, AskVolume3 "
+				+ "from (select TradingTime, ContractId, PreSettlementPrice, CurrSettlementPrice, "
+				+ "CurrOpenPrice, PreHoldings, Holdings, LatestPrice, Volume, Turnover, TopPrice, "
+				+ "BottomPrice, BidPrice1, AskPrice1, BidVolume1, AskVolume1, BidPrice2, AskPrice2, "
+				+ "BidVolume2, AskVolume2, BidPrice3, AskPrice3, BidVolume3, AskVolume3 "
+				+ "from xcube.futures_quotation order by tradingtime desc limit 50) as a "
+				+ "group by contractid;";
 
 		String detailsSql = "replace into xcube.com_futures_details(Ticker, CurrentPrice, "
 				+ "HightAndLow, HightAndLowRange, 5updown, YearToDate, Datetime, "
@@ -120,19 +146,16 @@ public class FuturesUtil {
 			System.out.println("futuresutil.operate >>> reconstruct conn");
 			conn = MysqlDBUtil.getConnection();
 		}
-		if (resultSet == null) {
-			resultSet = new RawDataAccess(conn).getRawData(sourceSql);
-		}
+
+		System.out.println("    >>> get futures result");
+		RawDataAccess rawDataAccess = new RawDataAccess(conn);
+		resultSet = rawDataAccess.getRawData(sourceSql);
 
 		try {
-			PreparedStatement detailsPrestmt = conn
-					.prepareStatement(detailsSql);
-			PreparedStatement propertyPrestmt = conn
-					.prepareStatement(propertySql);
-			PreparedStatement kChartsDayPrestmt = conn
-					.prepareStatement(kChartsDaySql);
-			PreparedStatement positionPrestmt = conn
-					.prepareStatement(positionSql);
+			detailsPrestmt = conn.prepareStatement(detailsSql);
+			propertyPrestmt = conn.prepareStatement(propertySql);
+			kChartsDayPrestmt = conn.prepareStatement(kChartsDaySql);
+			positionPrestmt = conn.prepareStatement(positionSql);
 
 			FuturesDetailsUtil futuresDetailsUtil = new FuturesDetailsUtil(conn);
 			FuturesPropertyUtil futuresPropertyUtil = new FuturesPropertyUtil(
@@ -151,10 +174,30 @@ public class FuturesUtil {
 				hightAndLowRange = futuresDetailsUtil.calHightAndLowRange(
 						currentPrice, yesterdaySettle);
 				// create a table to store the preSettlementPrice
-				fiveUpdown = futuresDetailsUtil.calFiveUpdown(ticker,
-						currentPrice, datetime);
-				yearToDate = futuresDetailsUtil.calYearToDate(ticker,
-						currentPrice, datetime);
+				if (!tickerPreSettleMap.containsKey(ticker)) {
+					BigDecimal fiveUpdownPrice = rawDataAccess
+							.getNDaysBeforePrice(ticker,
+									new Date(datetime.getTime()), 5);
+
+					Date date = new Date(datetime.getTime());
+					Calendar calendar = Calendar.getInstance();
+					calendar.setTime(date);
+					int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
+					BigDecimal yearToDatePrice = rawDataAccess
+							.getNDaysBeforePrice(tickerName, date,
+									dayOfYear - 1);
+
+					ArrayList<BigDecimal> list = new ArrayList<BigDecimal>();
+					list.add(fiveUpdownPrice);
+					list.add(yearToDatePrice);
+					tickerPreSettleMap.put(ticker, list);
+				}
+				
+				fiveUpdown = futuresDetailsUtil.calFiveUpdown(currentPrice,
+						tickerPreSettleMap.get(ticker).get(0));
+				yearToDate = futuresDetailsUtil.calYearToDate(currentPrice,
+						tickerPreSettleMap.get(ticker).get(1));
+				
 				openPrice = resultSet.getBigDecimal("CurrOpenPrice");
 				// volume in market_quotation means cumvolume
 				volumnCount = BigInteger.valueOf(resultSet.getLong("Volume"));
@@ -195,7 +238,7 @@ public class FuturesUtil {
 				amount = resultSet.getBigDecimal("TurnOver");
 
 				// set the value in futuresDetails
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " FuturesDetailsRecord >>> " + ticker + ","
 						+ datetime + "," + currentPrice + "," + yesterdaySettle
 						+ "," + hightAndLow + "," + hightAndLowRange + ","
@@ -262,7 +305,7 @@ public class FuturesUtil {
 						massOfPublicOpinion);
 
 				// set the values in futuresProperty table
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " FuturesPropertyRecord >>> " + ticker + ","
 						+ tickerName + "," + listingDate + "," + updateDate
 						+ "," + validity + "," + type + "," + superFutures);
@@ -284,6 +327,8 @@ public class FuturesUtil {
 						superFutures);
 
 				// set the values in futuresposition table
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " FuturesPositionRecord");
 				positionPrestmt.setString(FuturesPosition.Ticker.ordinal() + 1,
 						ticker);
 				positionPrestmt.setTimestamp(
@@ -299,10 +344,12 @@ public class FuturesUtil {
 						nature);
 
 				// set the values in kchartsday table
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " KChartsDayRecord");
 				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1,
 						ticker);
-				kChartsDayPrestmt.setTimestamp(
-						KChartsDay.Datetime.ordinal() + 1, datetime);
+				kChartsDayPrestmt.setDate(
+						KChartsDay.Datetime.ordinal() + 1, new Date(datetime.getTime()));
 				kChartsDayPrestmt.setBigDecimal(
 						KChartsDay.OpenPrice.ordinal() + 1, openPrice);
 				kChartsDayPrestmt.setBigDecimal(
@@ -324,10 +371,10 @@ public class FuturesUtil {
 						KChartsDay.MassOfPublicOpinion.ordinal() + 1,
 						massOfPublicOpinion);
 
-				detailsPrestmt.execute();
-				propertyPrestmt.execute();
-				positionPrestmt.execute();
-				kChartsDayPrestmt.execute();
+				detailsPrestmt.executeUpdate();
+				propertyPrestmt.executeUpdate();
+				positionPrestmt.executeUpdate();
+				kChartsDayPrestmt.executeUpdate();
 			}
 
 			// detailsPrestmt.close();
@@ -338,6 +385,18 @@ public class FuturesUtil {
 			e.printStackTrace();
 		}
 
+	}
+
+	public void closeStatement() {
+		try {
+			detailsPrestmt.close();
+			propertyPrestmt.close();
+			kChartsDayPrestmt.close();
+			positionPrestmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

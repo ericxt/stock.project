@@ -2,10 +2,12 @@ package com.rongdata.dbUtil;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.HashMap;
 
 import com.mysql.jdbc.Connection;
 
@@ -16,8 +18,11 @@ enum KChartsWeek {
 public class KChartsWeekUtil {
 	private Connection conn = null;
 	private ResultSet resultSet = null;
-	private boolean firstWeekOpenPriceOperation = true;
-	private BigDecimal openPrice;
+	private BigDecimal openPrice = BigDecimal.ZERO;
+	
+	private HashMap<String, BigDecimal> tickerMap = new HashMap<String, BigDecimal>();
+
+	private PreparedStatement prestmt = null;
 
 	public KChartsWeekUtil() {
 		// TODO Auto-generated constructor stub
@@ -58,7 +63,7 @@ public class KChartsWeekUtil {
 				+ "from xcube.com_k_charts_day group by ticker having week(datetime)=week(now());";
 
 		String ticker = null; // 证券代码
-		Timestamp datetime = null; // 时间
+		Date datetime = null; // 时间
 		openPrice = BigDecimal.ZERO;
 		BigDecimal hightPrice = BigDecimal.ZERO; // 最高价格
 		BigDecimal lowPrice = BigDecimal.ZERO; // 最低价格
@@ -69,22 +74,29 @@ public class KChartsWeekUtil {
 		float windVane = 0; // 风向标
 		float massOfPublicOpinion = 0; // 大众舆情
 
+		int count = 0;
+
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
 		}
-		if (resultSet == null) {
-			resultSet = new RawDataAccess(conn).getRawData(sourceSql);
-		}
+
+		System.out.println("  >>> KChartsWeek Getting Result Set");
+		resultSet = new RawDataAccess(conn).getRawData(sourceSql);
 
 		try {
-			PreparedStatement prestmt = conn.prepareStatement(targetSql);
+			prestmt = conn.prepareStatement(targetSql);
 
+			conn.setAutoCommit(false);
 			while (resultSet.next()) {
+				count++;
+
 				ticker = resultSet.getString("Ticker");
-				datetime = resultSet.getTimestamp("Datetime");
-				if (firstWeekOpenPriceOperation) {
+				datetime = resultSet.getDate("Datetime");
+				if (!tickerMap.containsKey(ticker)) {
 					openPrice = getWeekOpenPrice(ticker, datetime);
-					firstWeekOpenPriceOperation = false;
+					tickerMap.put(ticker, openPrice);
+				} else {
+					openPrice = tickerMap.get(ticker);
 				}
 				hightPrice = resultSet.getBigDecimal("HightPrice");
 				lowPrice = resultSet.getBigDecimal("LowPrice");
@@ -95,16 +107,21 @@ public class KChartsWeekUtil {
 				windVane = resultSet.getFloat("WindVane");
 				massOfPublicOpinion = resultSet.getFloat("MassOfPublicOpinion");
 
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " KChartsWeek Record");
 				prestmt.setString(KChartsWeek.Ticker.ordinal() + 1, ticker);
-				prestmt.setTimestamp(KChartsWeek.Datetime.ordinal() + 1,
+				prestmt.setDate(KChartsWeek.Datetime.ordinal() + 1,
 						datetime);
-				prestmt.setBigDecimal(KChartsWeek.OpenPrice.ordinal() + 1, openPrice);
+				prestmt.setBigDecimal(KChartsWeek.OpenPrice.ordinal() + 1,
+						openPrice);
 				prestmt.setBigDecimal(KChartsWeek.HightPrice.ordinal() + 1,
 						hightPrice);
-				prestmt.setBigDecimal(KChartsWeek.LowPrice.ordinal() + 1, lowPrice);
+				prestmt.setBigDecimal(KChartsWeek.LowPrice.ordinal() + 1,
+						lowPrice);
 				prestmt.setBigDecimal(KChartsWeek.ClosePrice.ordinal() + 1,
 						closePrice);
-				prestmt.setLong(KChartsWeek.Volume.ordinal() + 1, volume.longValue());
+				prestmt.setLong(KChartsWeek.Volume.ordinal() + 1,
+						volume.longValue());
 				prestmt.setBigDecimal(KChartsWeek.Amount.ordinal() + 1, amount);
 				prestmt.setFloat(KChartsWeek.TradingSentiment.ordinal() + 1,
 						tradingSentiment);
@@ -112,7 +129,21 @@ public class KChartsWeekUtil {
 				prestmt.setFloat(KChartsWeek.MassOfPublicOpinion.ordinal() + 1,
 						massOfPublicOpinion);
 
-				prestmt.execute();
+				// prestmt.execute();
+				prestmt.addBatch();
+
+				if (count % 200 == 0) {
+					prestmt.executeBatch();
+					conn.commit();
+					System.out
+							.println("     >>> Update 200 KChartsWeek Records");
+				}
+			}
+
+			if (count % 200 != 0) {
+				prestmt.executeBatch();
+				conn.commit();
+				System.out.println("     >>> Update " + (count % 200) + " KChartsWeek Records");
 			}
 
 		} catch (SQLException e) {
@@ -121,13 +152,13 @@ public class KChartsWeekUtil {
 		}
 	}
 
-	private BigDecimal getWeekOpenPrice(String ticker, Timestamp datetime) {
+	private BigDecimal getWeekOpenPrice(String ticker, Date datetime) {
 		// TODO Auto-generated method stub
 		String sql = "select openprice from xcube.com_k_charts_day where ticker = '"
 				+ ticker
-				+ "' and datetime = subdate(date('"
+				+ "' and datetime = subdate('"
 				+ datetime
-				+ "'),interval weekday('" + datetime + "') day)";
+				+ "',interval weekday('" + datetime + "') day)";
 		BigDecimal openPrice = BigDecimal.ZERO;
 
 		if (conn == null) {
@@ -135,6 +166,7 @@ public class KChartsWeekUtil {
 		}
 
 		try {
+			System.out.println("    >>> KChartsWeekUtil.getWeekOpenPrice >>> " + sql);
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet rest = prestmt.executeQuery();
 			while (rest.next()) {
@@ -148,7 +180,7 @@ public class KChartsWeekUtil {
 		return openPrice;
 	}
 
-	private BigDecimal getWeekClosePrice(String ticker, Timestamp datetime) {
+	private BigDecimal getWeekClosePrice(String ticker, Date datetime) {
 		// TODO Auto-generated method stub
 		// String sql =
 		// "select closeprice from xcube.com_k_charts_day where ticker = '"
@@ -167,6 +199,7 @@ public class KChartsWeekUtil {
 		}
 
 		try {
+			System.out.println("    >>> KChartsWeekUtil.getWeekClosePrice >> " + sql);
 			PreparedStatement prestmt = conn.prepareStatement(sql);
 			ResultSet rest = prestmt.executeQuery();
 			while (rest.next()) {
@@ -180,4 +213,12 @@ public class KChartsWeekUtil {
 		return closePrice;
 	}
 
+	public void closeStatement() {
+		try {
+			prestmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

@@ -174,6 +174,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calNowHand Float Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param curVolumnCount
@@ -185,9 +186,10 @@ public class DebtDetailsUtil {
 				datetime, "debt").floatValue();
 		return curVolumnCount - preCumVolume;
 	}
-	
+
 	/**
 	 * calNowHand BigInteger Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param volumnCount
@@ -196,12 +198,11 @@ public class DebtDetailsUtil {
 	public BigInteger calNowHand(String ticker, Timestamp datetime,
 			BigInteger curVolumnCount) {
 		// TODO Auto-generated method stub
-		BigInteger preCumVolume = new RawDataAccess(conn).getPrevCumVolume(ticker,
-				datetime, "debt");
+		BigInteger preCumVolume = new RawDataAccess(conn).getPrevCumVolume(
+				ticker, datetime, "debt");
 		BigInteger nowHand = curVolumnCount.subtract(preCumVolume);
 		return nowHand;
 	}
-
 
 	// to be completed
 	float calMassOfPublicOpinion() {
@@ -224,6 +225,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calDisk Float Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet
 	 * @return
@@ -255,9 +257,10 @@ public class DebtDetailsUtil {
 		}
 		return diskAmount;
 	}
-	
+
 	/**
 	 * calDisk BigInteger Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet2
 	 * @return
@@ -274,15 +277,18 @@ public class DebtDetailsUtil {
 				int resultForFirst = currentPrice.compareTo(bidPrice1);
 				int resultForSecond = currentPrice.compareTo(bidPrice2);
 				int resultForThird = currentPrice.compareTo(bidPrice3);
-				
+
 				if (resultForFirst <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume1")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume1")));
 				}
 				if (resultForSecond <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume2")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume2")));
 				}
 				if (resultForThird <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume3")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume3")));
 				}
 				// }
 				return diskAmount;
@@ -296,6 +302,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calOuterDisk Float Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet
 	 * @return
@@ -329,6 +336,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calOuterDisk BigInteger Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet2
 	 * @return
@@ -345,13 +353,16 @@ public class DebtDetailsUtil {
 				int resultForSecond = currentPrice.compareTo(askPrice2);
 				int resultForThird = currentPrice.compareTo(askPrice3);
 				if (resultForFirst >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume1")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume1")));
 				}
 				if (resultForSecond >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume2")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume2")));
 				}
 				if (resultForThird >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume3")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume3")));
 				}
 
 				return outerDiskAmount;
@@ -365,6 +376,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calLoadingUp Float Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param curHoldings
@@ -376,9 +388,10 @@ public class DebtDetailsUtil {
 				datetime, "debt").floatValue();
 		return curHoldings - prevHoldings;
 	}
-	
+
 	/**
 	 * calLoadingUp BigInteger Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param position
@@ -387,13 +400,14 @@ public class DebtDetailsUtil {
 	public BigInteger calLoadingUp(String ticker, Timestamp datetime,
 			BigInteger curHoldings) {
 		// TODO Auto-generated method stub
-		BigInteger prevHoldings = new RawDataAccess(conn).getPrevHoldings(ticker,
-				datetime, "debt");
+		BigInteger prevHoldings = new RawDataAccess(conn).getPrevHoldings(
+				ticker, datetime, "debt");
 		return curHoldings.subtract(prevHoldings);
 	}
 
 	/**
 	 * calYearToDate Float Version
+	 * 
 	 * @param ticker
 	 * @param currentPrice
 	 * @param datetime
@@ -413,9 +427,10 @@ public class DebtDetailsUtil {
 			return 0;
 		}
 	}
-	
+
 	/**
 	 * calYearToDate BigDecimal Version
+	 * 
 	 * @param ticker
 	 * @param currentPrice
 	 * @param datetime
@@ -428,11 +443,25 @@ public class DebtDetailsUtil {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(date);
 		int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
-		BigDecimal yearToDatePrice = new RawDataAccess(conn).getNDaysBeforePrice(
-				ticker, date, dayOfYear - 1);
+		BigDecimal yearToDatePrice = new RawDataAccess(conn)
+				.getNDaysBeforePrice(ticker, date, dayOfYear - 1);
 		// TODO Auto-generated method stub
-		if (yearToDatePrice != null && currentPrice != null && yearToDatePrice.compareTo(BigDecimal.ZERO) != 0) {
-			BigDecimal yearToDate = currentPrice.subtract(yearToDatePrice).divide(yearToDatePrice, 2, BigDecimal.ROUND_HALF_DOWN);
+		if (yearToDatePrice != null && currentPrice != null
+				&& yearToDatePrice.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal yearToDate = currentPrice.subtract(yearToDatePrice)
+					.divide(yearToDatePrice, 2, BigDecimal.ROUND_HALF_DOWN);
+			return yearToDate.floatValue();
+		} else {
+			return 0;
+		}
+	}
+	
+	public float calYearToDate(BigDecimal currentPrice,BigDecimal yearToDatePrice) {
+		// TODO Auto-generated method stub
+		if (yearToDatePrice != null && currentPrice != null
+				&& yearToDatePrice.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal yearToDate = currentPrice.subtract(yearToDatePrice)
+					.divide(yearToDatePrice, 2, BigDecimal.ROUND_HALF_DOWN);
 			return yearToDate.floatValue();
 		} else {
 			return 0;
@@ -441,6 +470,7 @@ public class DebtDetailsUtil {
 
 	/**
 	 * calFiveUpdown Float Version
+	 * 
 	 * @param ticker
 	 * @param currentPrice
 	 * @param datetime
@@ -458,9 +488,10 @@ public class DebtDetailsUtil {
 			return 0;
 		}
 	}
-	
+
 	/**
 	 * calFiveUpdown BigDecimal Version
+	 * 
 	 * @param ticker
 	 * @param currentPrice
 	 * @param datetime
@@ -471,10 +502,25 @@ public class DebtDetailsUtil {
 		// TODO Auto-generated method stub
 		RawDataAccess rawDataAccess = new RawDataAccess(conn);
 		Date date = new Date(datetime.getTime());
-		BigDecimal fiveUpdownPrice = rawDataAccess.getNDaysBeforePrice(ticker, date,
-				5);
-		if (fiveUpdownPrice != null && currentPrice != null && fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0) {
-			BigDecimal fiveUpdown = currentPrice.subtract(fiveUpdownPrice).divide(fiveUpdownPrice, 2, BigDecimal.ROUND_HALF_DOWN);
+		BigDecimal fiveUpdownPrice = rawDataAccess.getNDaysBeforePrice(ticker,
+				date, 5);
+		if (fiveUpdownPrice != null && currentPrice != null
+				&& fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal fiveUpdown = currentPrice.subtract(fiveUpdownPrice)
+					.divide(fiveUpdownPrice, 2, BigDecimal.ROUND_HALF_DOWN);
+			return fiveUpdown.floatValue();
+		} else {
+			return 0;
+		}
+	}
+
+	public float calFiveUpdown(BigDecimal currentPrice,
+			BigDecimal fiveUpdownPrice) {
+		// TODO Auto-generated method stub
+		if (fiveUpdownPrice != null && currentPrice != null
+				&& fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0) {
+			BigDecimal fiveUpdown = currentPrice.subtract(fiveUpdownPrice)
+					.divide(fiveUpdownPrice, 2, BigDecimal.ROUND_HALF_DOWN);
 			return fiveUpdown.floatValue();
 		} else {
 			return 0;
@@ -508,11 +554,14 @@ public class DebtDetailsUtil {
 			BigDecimal yesterdaySettle) {
 		// TODO Auto-generated method stub
 		if (currentPrice == null || yesterdaySettle == null) {
-			System.out.println("DebtDetailsUtil.calHightAndLowRange >>> parameters null");
+			System.out
+					.println("DebtDetailsUtil.calHightAndLowRange >>> parameters null");
 			return 0;
 		}
 		if (yesterdaySettle.compareTo(BigDecimal.ZERO) != 0) {
-			BigDecimal hightAndLowRange = currentPrice.subtract(yesterdaySettle).divide(yesterdaySettle, 2, BigDecimal.ROUND_HALF_DOWN);
+			BigDecimal hightAndLowRange = currentPrice
+					.subtract(yesterdaySettle).divide(yesterdaySettle, 2,
+							BigDecimal.ROUND_HALF_DOWN);
 			return hightAndLowRange.floatValue();
 		} else {
 			return 0;
@@ -550,6 +599,5 @@ public class DebtDetailsUtil {
 				.setScale(2, BigDecimal.ROUND_HALF_DOWN);
 		return hightAndLow.floatValue();
 	}
-
 
 }

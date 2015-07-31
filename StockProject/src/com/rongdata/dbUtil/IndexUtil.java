@@ -14,8 +14,14 @@ import com.mysql.jdbc.Connection;
 public class IndexUtil {
 	private Connection conn = null;
 	private ResultSet resultSet = null;
+
 	private boolean firstMainTickerOperation = true;
 	private HashSet<String> mainTickerSet = new HashSet<String>();
+
+	private PreparedStatement detailsPrestmt = null;
+	private PreparedStatement propertyPrestmt = null;
+	private PreparedStatement kChartsDayPrestmt = null;
+	private PreparedStatement positionPrestmt = null;
 
 	public IndexUtil() {
 		// TODO Auto-generated constructor stub
@@ -35,11 +41,23 @@ public class IndexUtil {
 	}
 
 	public void operate() {
-		String sourceSql = "select * from (select contractid, latestprice, presettlementprice, "
-				+ "holdings, preholdings, tradingtime, CurrOpenPrice, Volume, Turnover, TopPrice, "
-				+ "BottomPrice, CurrSettlementPrice from xcube.index_quotation as a "
-				+ "where TradingTime=(select TradingTime from xcube.latest_index_tradingtime "
-				+ "where a.ContractId=contractid)) as b group by contractid";
+		// String sourceSql =
+		// "select * from (select contractid, latestprice, presettlementprice, "
+		// +
+		// "holdings, preholdings, tradingtime, CurrOpenPrice, Volume, Turnover, TopPrice, "
+		// + "BottomPrice, CurrSettlementPrice from xcube.index_quotation as a "
+		// +
+		// "where TradingTime=(select TradingTime from xcube.latest_index_tradingtime "
+		// + "where a.ContractId=contractid)) as b group by contractid";
+
+		String sourceSql = "select TradingTime, ContractId, PreSettlementPrice, CurrSettlementPrice, "
+				+ "CurrOpenPrice, Holdings, PreHoldings, LatestPrice, Volume, Turnover, TopPrice, "
+				+ "BottomPrice "
+				+ "from (select TradingTime, ContractId, PreSettlementPrice, CurrSettlementPrice, "
+				+ "CurrOpenPrice, Holdings, PreHoldings, LatestPrice, Volume, Turnover, TopPrice, "
+				+ "BottomPrice "
+				+ "from xcube.index_quotation order by tradingtime desc limit 30) as a "
+				+ "group by contractid;";
 
 		String detailsSql = "replace into xcube.com_index_details(StockCode, CurrentPrice, "
 				+ "HightAndLow, HightAndLowRange, Basis, DayLoadingUp, Datetime,YesterdaySettle, "
@@ -101,19 +119,15 @@ public class IndexUtil {
 			System.out.println("indexutil.operate >>> reconstruct conn");
 			conn = MysqlDBUtil.getConnection();
 		}
-		if (resultSet == null) {
-			resultSet = new RawDataAccess(conn).getRawData(sourceSql);
-		}
+
+		System.out.println("    >>> index getting result set");
+		resultSet = new RawDataAccess(conn).getRawData(sourceSql);
 
 		try {
-			PreparedStatement detailsPrestmt = conn
-					.prepareStatement(detailsSql);
-			PreparedStatement propertyPrestmt = conn
-					.prepareStatement(propertySql);
-			PreparedStatement kChartsDayPrestmt = conn
-					.prepareStatement(kChartsDaySql);
-			PreparedStatement positionPrestmt = conn
-					.prepareStatement(positionSql);
+			detailsPrestmt = conn.prepareStatement(detailsSql);
+			propertyPrestmt = conn.prepareStatement(propertySql);
+			kChartsDayPrestmt = conn.prepareStatement(kChartsDaySql);
+			positionPrestmt = conn.prepareStatement(positionSql);
 
 			IndexDetailsUtil indexDetailsUtil = new IndexDetailsUtil(conn);
 			IndextPropertyUtil indextPropertyUtil = new IndextPropertyUtil(conn);
@@ -136,7 +150,8 @@ public class IndexUtil {
 						currentPrice, yesterdaySettle);
 				basis = indexDetailsUtil.calBasis(stockCode, currentPrice);
 				position = BigInteger.valueOf(resultSet.getLong("Holdings"));
-				BigInteger preHoldings = BigInteger.valueOf(resultSet.getLong("PreHoldings"));
+				BigInteger preHoldings = BigInteger.valueOf(resultSet
+						.getLong("PreHoldings"));
 				dayLoadingUp = indexDetailsUtil.calDayLoadingUp(position,
 						preHoldings);
 				datetime = resultSet.getTimestamp("TradingTime");
@@ -175,7 +190,7 @@ public class IndexUtil {
 				amount = turnover;
 
 				// set the values in IndexDetails table
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " IndexDetailsRecord >>> " + stockCode + ","
 						+ datetime + "," + currentPrice + "," + yesterdaySettle
 						+ "," + hightAndLow + "," + hightAndLowRange + ","
@@ -232,7 +247,7 @@ public class IndexUtil {
 						massOfPublicOpinion);
 
 				// set the values in IndexProperty table
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " IndexPropertyRecord >>> " + stockCode + ","
 						+ tickerName + "," + listingDate + "," + updateDate
 						+ "," + validity + "," + type + "," + pTicker);
@@ -251,6 +266,8 @@ public class IndexUtil {
 						pTicker);
 
 				// set the values in futuresposition table
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " FuturesPositionRecord Of Index");
 				positionPrestmt.setString(FuturesPosition.Ticker.ordinal() + 1,
 						stockCode);
 				positionPrestmt.setTimestamp(
@@ -266,10 +283,11 @@ public class IndexUtil {
 						nature);
 
 				// set the values in kchartsday table
+				System.out.println("    >>> " + resultSet.getRow() + " KChartsDayRecord Of Index");
 				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1,
 						stockCode);
-				kChartsDayPrestmt.setTimestamp(
-						KChartsDay.Datetime.ordinal() + 1, datetime);
+				kChartsDayPrestmt.setDate(
+						KChartsDay.Datetime.ordinal() + 1, new Date(datetime.getTime()));
 				kChartsDayPrestmt.setBigDecimal(
 						KChartsDay.OpenPrice.ordinal() + 1, openPrice);
 				kChartsDayPrestmt.setBigDecimal(
@@ -302,4 +320,15 @@ public class IndexUtil {
 		}
 	}
 
+	public void closeStatement() {
+		try {
+			detailsPrestmt.close();
+			propertyPrestmt.close();
+			kChartsDayPrestmt.close();
+			positionPrestmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

@@ -14,6 +14,11 @@ public class StockUtil {
 	private Connection conn = null;
 	private ResultSet resultSet = null;
 
+	private PreparedStatement detailsPrestmt = null;
+	private PreparedStatement propertyPrestmt = null;
+	private PreparedStatement positionPrestmt = null;
+	private PreparedStatement kChartsDayPrestmt = null;
+
 	public StockUtil() {
 		// TODO Auto-generated constructor stub
 	}
@@ -32,11 +37,23 @@ public class StockUtil {
 	}
 
 	public void operate() {
-		String sourceSql = "select * from (select TradingTime, ContractId, PreClosePrice, "
+		// String sourceSql =
+		// "select * from (select TradingTime, ContractId, PreClosePrice, "
+		// +
+		// "CurrOpenPrice, Holdings, LatestPrice, Volume, Turnover, AveragePrice, "
+		// + "TopPrice, BottomPrice from xcube.stock_quotation as a "
+		// +
+		// "where TradingTime=(select TradingTime from xcube.latest_stock_tradingtime "
+		// + "where a.ContractId=contractid)) as b group by contractid";
+
+		String sourceSql = "select TradingTime, ContractId, PreClosePrice, "
 				+ "CurrOpenPrice, Holdings, LatestPrice, Volume, Turnover, AveragePrice, "
-				+ "TopPrice, BottomPrice from xcube.stock_quotation as a "
-				+ "where TradingTime=(select TradingTime from xcube.latest_stock_tradingtime "
-				+ "where a.ContractId=contractid)) as b group by contractid";
+				+ "TopPrice, BottomPrice "
+				+ "from (select TradingTime, ContractId, PreClosePrice, "
+				+ "CurrOpenPrice, Holdings, LatestPrice, Volume, Turnover, AveragePrice, "
+				+ "TopPrice, BottomPrice "
+				+ "from xcube.stock_quotation order by tradingtime desc limit 20000) as a "
+				+ "group by contractid ";
 
 		String detailsSql = "replace into xcube.com_single_ticker_details(StockCode, "
 				+ "Datetime, CurrentPrice, HightAndLow, HightAndLowRange, YesterdayReceived, "
@@ -44,7 +61,7 @@ public class StockUtil {
 				+ "AveragePrice, PriceEarningsRatio, VolumeCount, VolumeRatio, PriceToBook, "
 				+ "TradingSentiment, WindVane, MassOfPublicOpinion, TotalMarketValue, "
 				+ "CirculationValue) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "
-				+ "?, ?, ?, ?, ?);";
+				+ "?, ?, ?, ?, ?) ";
 
 		String PropertySql = "replace into xcube.com_single_ticker_property(TickerName, "
 				+ "TickerCode, ListingDate, UpdateDate, Validity) values(?, ?, ?, ?, ?)";
@@ -56,7 +73,7 @@ public class StockUtil {
 		String kChartsDaySql = "replace into xcube.com_k_charts_day(Ticker, Datetime, "
 				+ "OpenPrice, HightPrice, LowPrice, ClosePrice, Volume, Amount, "
 				+ "TradingSentiment, WindVane, MassOfPublicOpinion) "
-				+ "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+				+ "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ";
 
 		String stockCode = null; // 证券代码
 		Timestamp datetime = null; // 时间
@@ -93,22 +110,21 @@ public class StockUtil {
 		BigDecimal closePrice = BigDecimal.ZERO; // 收盘价格
 		BigDecimal amount = BigDecimal.ZERO; // 累计成交金额
 
+		int count = 0;
+
 		if (conn == null) {
 			System.out.println("StockUtil.operate >>> reconstruct conn");
 			conn = MysqlDBUtil.getConnection();
 		}
-		if (resultSet == null) {
-			resultSet = new RawDataAccess(conn).getRawData(sourceSql);
-		}
+
+		System.out.println("  >>> stock getting result set");
+		resultSet = new RawDataAccess(conn).getRawData(sourceSql);
 
 		try {
-			PreparedStatement detailsPrestmt = conn
-					.prepareStatement(detailsSql);
-			PreparedStatement propertyPrestmt = conn
-					.prepareStatement(PropertySql);
-			PreparedStatement positionPrestmt = conn
-					.prepareStatement(positionSql);
-			PreparedStatement kChartsDayPrestmt = conn.prepareStatement(kChartsDaySql);
+			detailsPrestmt = conn.prepareStatement(detailsSql);
+			propertyPrestmt = conn.prepareStatement(PropertySql);
+			positionPrestmt = conn.prepareStatement(positionSql);
+			kChartsDayPrestmt = conn.prepareStatement(kChartsDaySql);
 
 			SingleTickerDetailsUtil singleTickerDetailsUtil = new SingleTickerDetailsUtil(
 					conn);
@@ -116,7 +132,11 @@ public class StockUtil {
 					conn);
 			TickerPositionUtil tickerPositionUtil = new TickerPositionUtil(conn);
 
+			conn.setAutoCommit(false);
+
 			while (resultSet.next()) {
+				count++;
+
 				// parameters in SingleTickerDetails table
 				stockCode = resultSet.getString("ContractId");
 				datetime = resultSet.getTimestamp("TradingTime");
@@ -163,13 +183,13 @@ public class StockUtil {
 				// parameters in TickerPosition table
 				nowHand = tickerPositionUtil.calNowHand(stockCode, datetime,
 						volume);
-				
+
 				// parameters in kchartsday table
 				closePrice = currentPrice;
 				amount = turnover;
 
 				// set the value in stockDetails
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " StockDetailsRecord >>> " + stockCode + ","
 						+ datetime + "," + currentPrice + ","
 						+ yesterdayReceived + "," + hightAndLow + ","
@@ -200,7 +220,8 @@ public class StockUtil {
 						SingleTickerDetails.TodayOpenPrice.ordinal() + 1,
 						todayOpenPrice);
 				detailsPrestmt.setLong(
-						SingleTickerDetails.Volume.ordinal() + 1, volume.longValue());
+						SingleTickerDetails.Volume.ordinal() + 1,
+						volume.longValue());
 				detailsPrestmt.setBigDecimal(
 						SingleTickerDetails.Turnover.ordinal() + 1, turnover);
 				detailsPrestmt.setFloat(
@@ -242,7 +263,7 @@ public class StockUtil {
 						circulationValue);
 
 				// set the values in StockProperty table
-				System.out.println(resultSet.getRow()
+				System.out.println("    >>> " + resultSet.getRow()
 						+ " StockPropertyRecord >>> " + tickerName + ","
 						+ tickerCode + "," + listingDate + "," + updateDate
 						+ "," + validity);
@@ -262,32 +283,36 @@ public class StockUtil {
 						SingleTickerProperty.Validity.ordinal() + 1, validity);
 
 				// set the values in TickerPosition table
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " TickerPositionRecord");
 				positionPrestmt.setString(TickerPosition.Ticker.ordinal() + 1,
 						stockCode);
 				positionPrestmt.setTimestamp(
 						TickerPosition.Datetime.ordinal() + 1, datetime);
-				positionPrestmt.setBigDecimal(TickerPosition.Price.ordinal() + 1,
-						currentPrice);
+				positionPrestmt.setBigDecimal(
+						TickerPosition.Price.ordinal() + 1, currentPrice);
 				positionPrestmt.setLong(TickerPosition.NowHand.ordinal() + 1,
 						nowHand.longValue());
-				
+
 				// set the values in kchartsday table
+				System.out.println("    >>> " + resultSet.getRow()
+						+ " KChartsDayRecord Of Stock");
 				kChartsDayPrestmt.setString(KChartsDay.Ticker.ordinal() + 1,
 						stockCode);
-				kChartsDayPrestmt.setTimestamp(
-						KChartsDay.Datetime.ordinal() + 1, datetime);
-				kChartsDayPrestmt.setBigDecimal(KChartsDay.OpenPrice.ordinal() + 1,
-						todayOpenPrice);
-				kChartsDayPrestmt.setBigDecimal(KChartsDay.HightPrice.ordinal() + 1,
-						hightPrice);
-				kChartsDayPrestmt.setBigDecimal(KChartsDay.LowPrice.ordinal() + 1,
-						lowPrice);
-				kChartsDayPrestmt.setBigDecimal(KChartsDay.ClosePrice.ordinal() + 1,
-						closePrice);
+				kChartsDayPrestmt.setDate(
+						KChartsDay.Datetime.ordinal() + 1, new Date(datetime.getTime()));
+				kChartsDayPrestmt.setBigDecimal(
+						KChartsDay.OpenPrice.ordinal() + 1, todayOpenPrice);
+				kChartsDayPrestmt.setBigDecimal(
+						KChartsDay.HightPrice.ordinal() + 1, hightPrice);
+				kChartsDayPrestmt.setBigDecimal(
+						KChartsDay.LowPrice.ordinal() + 1, lowPrice);
+				kChartsDayPrestmt.setBigDecimal(
+						KChartsDay.ClosePrice.ordinal() + 1, closePrice);
 				kChartsDayPrestmt.setLong(KChartsDay.Volume.ordinal() + 1,
 						volume.longValue());
-				kChartsDayPrestmt.setBigDecimal(KChartsDay.Amount.ordinal() + 1,
-						amount);
+				kChartsDayPrestmt.setBigDecimal(
+						KChartsDay.Amount.ordinal() + 1, amount);
 				kChartsDayPrestmt.setFloat(
 						KChartsDay.TradingSentiment.ordinal() + 1,
 						tradingSentiment);
@@ -297,10 +322,34 @@ public class StockUtil {
 						KChartsDay.MassOfPublicOpinion.ordinal() + 1,
 						massOfPublicOpinion);
 
-				detailsPrestmt.execute();
-				propertyPrestmt.execute();
-				positionPrestmt.execute();
-				kChartsDayPrestmt.execute();
+				// detailsPrestmt.execute();
+				// propertyPrestmt.execute();
+				// positionPrestmt.execute();
+				// kChartsDayPrestmt.execute();
+
+				detailsPrestmt.addBatch();
+				propertyPrestmt.addBatch();
+				positionPrestmt.addBatch();
+				kChartsDayPrestmt.addBatch();
+
+				if (count % 200 == 0) {
+					detailsPrestmt.executeBatch();
+					propertyPrestmt.executeBatch();
+					positionPrestmt.executeBatch();
+					kChartsDayPrestmt.executeBatch();
+					conn.commit();
+					System.out.println("    >>> Update 100 Records Of Stock");
+				}
+			}
+
+			if (count % 200 != 0) {
+				detailsPrestmt.executeBatch();
+				propertyPrestmt.executeBatch();
+				positionPrestmt.executeBatch();
+				kChartsDayPrestmt.executeBatch();
+				conn.commit();
+				System.out.println("    >>> Update " + (count % 100)
+						+ " Records Of Stock");
 			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -308,4 +357,15 @@ public class StockUtil {
 		}
 	}
 
+	public void closeStatement() {
+		try {
+			detailsPrestmt.close();
+			propertyPrestmt.close();
+			kChartsDayPrestmt.close();
+			positionPrestmt.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 }

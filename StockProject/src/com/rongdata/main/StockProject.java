@@ -1,5 +1,6 @@
 package com.rongdata.main;
 
+import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
@@ -8,11 +9,13 @@ import java.util.TimerTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.mysql.jdbc.Connection;
 import com.rongdata.dbUtil.DebtUtil;
 import com.rongdata.dbUtil.FuturesUtil;
 import com.rongdata.dbUtil.IndexUtil;
 import com.rongdata.dbUtil.KChartsMonthUtil;
 import com.rongdata.dbUtil.KChartsWeekUtil;
+import com.rongdata.dbUtil.MysqlDBUtil;
 import com.rongdata.dbUtil.StockUtil;
 import com.rongdata.dbUtil.TickerTimeshareUtil;
 
@@ -30,8 +33,8 @@ public class StockProject {
 		int period = 24 * 60 * 60 * 1000;
 		Timer timer = new Timer();
 		StockHandleTask stockHandleTask = new StockHandleTask();
-		System.out.println("stock project starting ...");
-		System.out.println("waiting for scheduling ...");
+		System.out.println("[SCHEDULE]stock project starting ...");
+		System.out.println("[SCHEDULE]waiting for scheduling ...");
 		logger.info("stock project starting...");
 		timer.schedule(stockHandleTask, date, period);
 
@@ -42,16 +45,25 @@ public class StockProject {
 class StockHandleTask extends TimerTask {
 	static Logger logger = LogManager.getLogger();
 
+	protected volatile boolean futuresStatementCreated = false;
+	protected volatile boolean debtStatementCreated = false;
+	protected volatile boolean indexStatementCreated = false;
+	protected volatile boolean stockStatementCreated = false;
+	protected volatile boolean timeShareStatementCreated = false;
+	protected volatile boolean kChartsWeekStatementCreated = false;
+	protected volatile boolean kChartsMonthStatementCreated = false;
+
 	@Override
 	public void run() {
+		Connection conn = MysqlDBUtil.getConnection();
 		// TODO Auto-generated method stub
-		FuturesUtil futuresUtil = new FuturesUtil();
-		DebtUtil debtUtil = new DebtUtil();
-		IndexUtil indexUtil = new IndexUtil();
-		StockUtil stockUtil = new StockUtil();
-		TickerTimeshareUtil tickerTimeshareUtil = new TickerTimeshareUtil();
-		KChartsWeekUtil kChartsWeekUtil = new KChartsWeekUtil();
-		KChartsMonthUtil kChartsMonthUtil = new KChartsMonthUtil();
+		FuturesUtil futuresUtil = new FuturesUtil(conn);
+		DebtUtil debtUtil = new DebtUtil(conn);
+		IndexUtil indexUtil = new IndexUtil(conn);
+		StockUtil stockUtil = new StockUtil(conn);
+		TickerTimeshareUtil tickerTimeshareUtil = new TickerTimeshareUtil(conn);
+		KChartsWeekUtil kChartsWeekUtil = new KChartsWeekUtil(conn);
+		KChartsMonthUtil kChartsMonthUtil = new KChartsMonthUtil(conn);
 
 		// futuresThread
 		System.out.println("futuresThread starting");
@@ -62,9 +74,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>>starting futures operate .....");
 					futuresUtil.operate();
+					System.out.println(">>>ended futures operate .....");
+					if (!futuresStatementCreated) {
+						futuresStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println(">>>sleeping for 5000 millis , current millistiem >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -76,10 +95,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, futuresThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, futuresThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, futuresThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -90,6 +107,11 @@ class StockHandleTask extends TimerTask {
 							e.printStackTrace();
 						}
 					}
+				}
+
+				if (futuresStatementCreated) {
+					System.out.println("close futures statement");
+					futuresUtil.closeStatement();
 				}
 			}
 		}, "FuturesThread");
@@ -104,9 +126,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>>starting debt operation .....");
 					debtUtil.operate();
+					System.out.println(">>>ended debt operation .....");
+					if (!debtStatementCreated) {
+						debtStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println(">>>sleeping for 5000 millis, currentMillisTime >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -118,10 +147,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, debtThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, debtThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, debtThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -134,6 +161,10 @@ class StockHandleTask extends TimerTask {
 					}
 				}
 
+				if (debtStatementCreated) {
+					System.out.println("close debt statement");
+					debtUtil.closeStatement();
+				}
 			}
 		}, "DebtThread");
 		debtThread.start();
@@ -147,9 +178,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>> starting index operation");
 					indexUtil.operate();
+					System.out.println(">>> ended index operation");
+					if (!indexStatementCreated) {
+						indexStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println(">>> index sleeping for 5000 millis, currentMillisTime >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -161,10 +199,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, indexThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, indexThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, indexThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -175,6 +211,11 @@ class StockHandleTask extends TimerTask {
 							e.printStackTrace();
 						}
 					}
+				}
+
+				if (indexStatementCreated) {
+					System.out.println("close index statement");
+					indexUtil.closeStatement();
 				}
 			}
 		}, "IndexThread");
@@ -189,9 +230,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>> getting stock operation");
 					stockUtil.operate();
+					System.out.println(">>> ended stock operation");
+					if (!stockStatementCreated) {
+						stockStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println("stock sleeping for 5000 millis, currentMillisTime >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -203,10 +251,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, stockThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, stockThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, stockThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -217,6 +263,11 @@ class StockHandleTask extends TimerTask {
 							e.printStackTrace();
 						}
 					}
+				}
+
+				if (stockStatementCreated) {
+					System.out.println("close stock statement");
+					stockUtil.closeStatement();
 				}
 			}
 		}, "StockThread");
@@ -231,9 +282,17 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>> TickerTimeShare Starting Operation");
 					tickerTimeshareUtil.insertAll();
+					System.out.println(">>> TickerTimeShare Ended Operation");
+					if (!timeShareStatementCreated) {
+						timeShareStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out
+								.println(">>> TickerTimeShare Sleeping For 5000 Millis, currentMillisTime >>> "
+										+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -260,6 +319,11 @@ class StockHandleTask extends TimerTask {
 						}
 					}
 				}
+
+				if (timeShareStatementCreated) {
+					System.out.println("close tickertimeshare statement");
+					tickerTimeshareUtil.closeStatement();
+				}
 			}
 		}, "TickerTimeShareThread");
 		timeShareThread.start();
@@ -273,9 +337,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>> KChartsWeek Starting Operation");
 					kChartsWeekUtil.insertAll();
+					System.out.println(">>> KChartsWeek Ended Operation");
+					if (!kChartsWeekStatementCreated) {
+						kChartsMonthStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println(">>> KChartsWeek Sleeping For 5000 Millis, currentMillisTime >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -287,10 +358,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, kChartsWeekThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, kChartsWeekThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, kChartsWeekThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -301,6 +370,11 @@ class StockHandleTask extends TimerTask {
 							e.printStackTrace();
 						}
 					}
+				}
+
+				if (kChartsWeekStatementCreated) {
+					System.out.println("close kchartsweek statement");
+					kChartsWeekUtil.closeStatement();
 				}
 			}
 		}, "KChartsWeekThread");
@@ -315,9 +389,16 @@ class StockHandleTask extends TimerTask {
 			public void run() {
 				// TODO Auto-generated method stub
 				while (!isAfterExpired(System.currentTimeMillis())) {
+					System.out.println(">>> KChartsMonth Starting Operation");
 					kChartsMonthUtil.insertAll();
+					System.out.println(">>> KChartsMonth Ended Operation");
+					if (!kChartsMonthStatementCreated) {
+						kChartsMonthStatementCreated = true;
+					}
 					try {
-						Thread.sleep(500);
+						System.out.println("KChartsMonth Sleeping For 5000 Millis, currentMillisTime >>> "
+								+ System.currentTimeMillis());
+						Thread.sleep(5000);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -329,10 +410,8 @@ class StockHandleTask extends TimerTask {
 								calendar.get(Calendar.MONTH),
 								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
 						long expectedMillis = calendar.getTimeInMillis();
-						System.out
-								.println("Now is NoonExpired time, kChartsMonthThread sleeping for "
-										+ (expectedMillis - curMillis)
-										+ " millis.");
+						System.out.println("Now is NoonExpired time, kChartsMonthThread sleeping for "
+								+ (expectedMillis - curMillis) + " millis.");
 						logger.info("Now is NoonExpired time, kChartsMonthThread sleeping for "
 								+ (expectedMillis - curMillis) + " millis.");
 
@@ -344,9 +423,52 @@ class StockHandleTask extends TimerTask {
 						}
 					}
 				}
+
+				if (kChartsMonthStatementCreated) {
+					System.out.println("close kchartsmonth statement");
+					kChartsMonthUtil.closeStatement();
+				}
 			}
 		}, "KChartsMonthThread");
 		kChartsMonthThread.start();
+
+		logger.info("close preparedStatement");
+
+		// connCloseOperation
+		System.out.println("connCloseOperation starting");
+		logger.info("connCloseOperation");
+		Thread connCloseOperation = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while (true) {
+					if (allStatementsClosed()) {
+						try {
+							System.out.println("close connection");
+							logger.info("close connection");
+							conn.close();
+							break;
+						} catch (SQLException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}, "connCloseOperationThread");
+		connCloseOperation.start();
+	}
+
+	private boolean allStatementsClosed() {
+		// TODO Auto-generated method stub
+		if (futuresStatementCreated && debtStatementCreated
+				&& indexStatementCreated && stockStatementCreated
+				&& timeShareStatementCreated && kChartsWeekStatementCreated
+				&& kChartsMonthStatementCreated) {
+			return true;
+		}
+		return false;
 	}
 
 	protected boolean isNoonExpired(long currentTimeMillis) {

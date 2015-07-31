@@ -20,11 +20,6 @@ public class FuturesDetailsUtil {
 	Connection conn = null;
 	ResultSet resultSet = null;
 
-	boolean firstFiveUpdownOperation = true;
-	BigDecimal fiveUpdownPrice = null;
-	private boolean firstYearToDateOperation = true;
-	private BigDecimal yearToDatePrice = null;
-
 	public Connection getConn() {
 		return conn;
 	}
@@ -370,6 +365,7 @@ public class FuturesDetailsUtil {
 
 	/**
 	 * calNowHand Float Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param curVolumnCount
@@ -381,9 +377,10 @@ public class FuturesDetailsUtil {
 				datetime, "futures").floatValue();
 		return curVolumnCount - preCumVolume;
 	}
-	
+
 	/**
 	 * calNowHand BigInteger Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param volumnCount
@@ -392,11 +389,10 @@ public class FuturesDetailsUtil {
 	public BigInteger calNowHand(String ticker, Timestamp datetime,
 			BigInteger curVolumnCount) {
 		// TODO Auto-generated method stub
-		BigInteger preCumVolume = new RawDataAccess(conn).getPrevCumVolume(ticker,
-				datetime, "futures");
+		BigInteger preCumVolume = new RawDataAccess(conn).getPrevCumVolume(
+				ticker, datetime, "futures");
 		return curVolumnCount.subtract(preCumVolume);
 	}
-
 
 	// to be completed
 	float calMassOfPublicOpinion() {
@@ -420,6 +416,7 @@ public class FuturesDetailsUtil {
 
 	/**
 	 * calDist Float Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet
 	 * @return
@@ -451,9 +448,10 @@ public class FuturesDetailsUtil {
 		}
 		return diskAmount;
 	}
-	
+
 	/**
 	 * calDisk BigInteger Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet2
 	 * @return
@@ -471,13 +469,16 @@ public class FuturesDetailsUtil {
 				int resultForSecond = currentPrice.compareTo(bidPrice2);
 				int resultForThird = currentPrice.compareTo(bidPrice3);
 				if (resultForFirst <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume1")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume1")));
 				}
 				if (resultForSecond <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume2")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume2")));
 				}
 				if (resultForThird <= 0) {
-					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet.getLong("BidVolume3")));
+					diskAmount = diskAmount.add(BigInteger.valueOf(resultSet
+							.getLong("BidVolume3")));
 				}
 				// }
 				return diskAmount;
@@ -491,6 +492,7 @@ public class FuturesDetailsUtil {
 
 	/**
 	 * calOuterDisk Float Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet
 	 * @return
@@ -521,9 +523,10 @@ public class FuturesDetailsUtil {
 		}
 		return outerDiskAmount;
 	}
-	
+
 	/**
 	 * calOuterDisk BigInteger Version
+	 * 
 	 * @param currentPrice
 	 * @param resultSet2
 	 * @return
@@ -540,13 +543,16 @@ public class FuturesDetailsUtil {
 				int resultForSecond = currentPrice.compareTo(askPrice2);
 				int resultForThird = currentPrice.compareTo(askPrice3);
 				if (resultForFirst >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume1")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume1")));
 				}
 				if (resultForSecond >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume2")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume2")));
 				}
 				if (resultForThird >= 0) {
-					outerDiskAmount = outerDiskAmount.add(BigInteger.valueOf(resultSet.getLong("AskVolume3")));
+					outerDiskAmount = outerDiskAmount.add(BigInteger
+							.valueOf(resultSet.getLong("AskVolume3")));
 				}
 
 				return outerDiskAmount;
@@ -558,9 +564,9 @@ public class FuturesDetailsUtil {
 		return outerDiskAmount;
 	}
 
-
 	/**
 	 * calLoadingUp Float Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param curHoldings
@@ -572,9 +578,10 @@ public class FuturesDetailsUtil {
 				datetime, "futures").floatValue();
 		return curHoldings - prevHoldings;
 	}
-	
+
 	/**
 	 * calLoadingUp BigInteger Version
+	 * 
 	 * @param ticker
 	 * @param datetime
 	 * @param position
@@ -583,8 +590,8 @@ public class FuturesDetailsUtil {
 	public BigInteger calLoadingUp(String ticker, Timestamp datetime,
 			BigInteger curHoldings) {
 		// TODO Auto-generated method stub
-		BigInteger prevHoldings = new RawDataAccess(conn).getPrevHoldings(ticker,
-				datetime, "futures");
+		BigInteger prevHoldings = new RawDataAccess(conn).getPrevHoldings(
+				ticker, datetime, "futures");
 		return curHoldings.subtract(prevHoldings);
 	}
 
@@ -597,19 +604,17 @@ public class FuturesDetailsUtil {
 	 * @return
 	 */
 	float calYearToDate(String ticker, float currentPrice, Timestamp datetime) {
-		if (firstYearToDateOperation) {
-			Date date = new Date(datetime.getTime());
-			Calendar calendar = Calendar.getInstance();
-			calendar.setTime(date);
-			int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
-			yearToDatePrice = new RawDataAccess(conn).getNDaysBeforePrice(
-					ticker, date, dayOfYear - 1);
-			firstYearToDateOperation = false;
-		}
+		Date date = new Date(datetime.getTime());
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
+		BigDecimal yearToDatePrice = new RawDataAccess(conn)
+				.getNDaysBeforePrice(ticker, date, dayOfYear - 1);
 		System.out.println("FuturesDetailsUtil.calyeartodate >>> "
 				+ yearToDatePrice);
 		if (yearToDatePrice.intValue() != 0 && yearToDatePrice != null) {
-			return (currentPrice - yearToDatePrice.floatValue()) / yearToDatePrice.floatValue();
+			return (currentPrice - yearToDatePrice.floatValue())
+					/ yearToDatePrice.floatValue();
 		} else {
 			return Float.MAX_VALUE;
 		}
@@ -626,18 +631,16 @@ public class FuturesDetailsUtil {
 	public float calYearToDate(String ticker, BigDecimal currentPrice,
 			Timestamp datetime) {
 		// TODO Auto-generated method stub
-		if (firstYearToDateOperation) {
-			Date date = new Date(datetime.getTime());
-			Calendar calendar = Calendar.getInstance();
-			calendar.setTime(date);
-			int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
-			yearToDatePrice = new RawDataAccess(conn).getNDaysBeforePrice(
-					ticker, date, dayOfYear - 1);
-			firstYearToDateOperation = false;
-		}
+		Date date = new Date(datetime.getTime());
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
+		BigDecimal yearToDatePrice = new RawDataAccess(conn)
+				.getNDaysBeforePrice(ticker, date, dayOfYear - 1);
 		System.out.println("FuturesDetailsUtil.calyeartodate >>> "
 				+ yearToDatePrice);
-		if (yearToDatePrice != null && (yearToDatePrice.compareTo(BigDecimal.ZERO) != 0)) {
+		if (yearToDatePrice != null
+				&& (yearToDatePrice.compareTo(BigDecimal.ZERO) != 0)) {
 			BigDecimal yearToDate = currentPrice.subtract(yearToDatePrice)
 					.divide(yearToDatePrice, 2, BigDecimal.ROUND_HALF_DOWN);
 			return yearToDate.floatValue();
@@ -656,13 +659,9 @@ public class FuturesDetailsUtil {
 	 */
 	float calFiveUpdown(String ticker, float currentPrice, Timestamp datetime) {
 		// TODO Auto-generated method stub
-		if (firstFiveUpdownOperation) {
-			RawDataAccess rawDataAccess = new RawDataAccess(conn);
-			Date date = new Date(datetime.getTime());
-			fiveUpdownPrice = rawDataAccess
-					.getNDaysBeforePrice(ticker, date, 5);
-			firstFiveUpdownOperation = false;
-		}
+		RawDataAccess rawDataAccess = new RawDataAccess(conn);
+		Date date = new Date(datetime.getTime());
+		BigDecimal fiveUpdownPrice = rawDataAccess.getNDaysBeforePrice(ticker, date, 5);
 		if (fiveUpdownPrice.intValue() != 0
 				&& fiveUpdownPrice.floatValue() != Float.MIN_NORMAL) {
 			return (currentPrice - fiveUpdownPrice.floatValue())
@@ -683,14 +682,11 @@ public class FuturesDetailsUtil {
 	public float calFiveUpdown(String ticker, BigDecimal currentPrice,
 			Timestamp datetime) {
 		// TODO Auto-generated method stub
-		if (firstFiveUpdownOperation) {
-			RawDataAccess rawDataAccess = new RawDataAccess(conn);
-			Date date = new Date(datetime.getTime());
-			fiveUpdownPrice = rawDataAccess
-					.getNDaysBeforePrice(ticker, date, 5);
-			firstFiveUpdownOperation = false;
-		}
-		if ((fiveUpdownPrice != null) && (fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0)) {
+		RawDataAccess rawDataAccess = new RawDataAccess(conn);
+		Date date = new Date(datetime.getTime());
+		BigDecimal fiveUpdownPrice = rawDataAccess.getNDaysBeforePrice(ticker, date, 5);
+		if ((fiveUpdownPrice != null)
+				&& (fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0)) {
 			BigDecimal subtract = currentPrice.subtract(fiveUpdownPrice);
 			BigDecimal fiveUpdown = subtract.divide(fiveUpdownPrice, 2,
 					BigDecimal.ROUND_HALF_DOWN);
@@ -730,7 +726,8 @@ public class FuturesDetailsUtil {
 			System.out
 					.println("FuturesDetailsUtil.calHightAndLowRange >>> parameters null");
 		}
-		if (currentPrice != null && yesterdaySettle != null && yesterdaySettle.compareTo(BigDecimal.ZERO) != 0) {
+		if (currentPrice != null && yesterdaySettle != null
+				&& yesterdaySettle.compareTo(BigDecimal.ZERO) != 0) {
 			BigDecimal hightAndLow = currentPrice.subtract(yesterdaySettle);
 			BigDecimal hightAndLowRange = hightAndLow.divide(yesterdaySettle,
 					2, BigDecimal.ROUND_HALF_DOWN);
@@ -771,5 +768,42 @@ public class FuturesDetailsUtil {
 		return hightAndLow.setScale(2, BigDecimal.ROUND_HALF_DOWN).floatValue();
 	}
 
+	/**
+	 * calFiveUpdown BigDecimal Version With Two Parameters
+	 * @param currentPrice
+	 * @param fiveUpdownPrice
+	 * @return
+	 */
+	public float calFiveUpdown(BigDecimal currentPrice,
+			BigDecimal fiveUpdownPrice) {
+		// TODO Auto-generated method stub
+		if ((fiveUpdownPrice != null)
+				&& (fiveUpdownPrice.compareTo(BigDecimal.ZERO) != 0)) {
+			BigDecimal subtract = currentPrice.subtract(fiveUpdownPrice);
+			BigDecimal fiveUpdown = subtract.divide(fiveUpdownPrice, 2,
+					BigDecimal.ROUND_HALF_DOWN);
+			return fiveUpdown.floatValue();
+		} else {
+			return 0;
+		}
+	}
+
+	/**
+	 * calYearToDate BigDecimal Version With Two Parameters
+	 * @param currentPrice
+	 * @param yearToDatePrice
+	 * @return
+	 */
+	public float calYearToDate(BigDecimal currentPrice, BigDecimal yearToDatePrice) {
+		// TODO Auto-generated method stub
+		if (yearToDatePrice != null
+				&& (yearToDatePrice.compareTo(BigDecimal.ZERO) != 0)) {
+			BigDecimal yearToDate = currentPrice.subtract(yearToDatePrice)
+					.divide(yearToDatePrice, 2, BigDecimal.ROUND_HALF_DOWN);
+			return yearToDate.floatValue();
+		} else {
+			return 0;
+		}
+	}
 
 }

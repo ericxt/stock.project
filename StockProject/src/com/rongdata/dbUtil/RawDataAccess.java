@@ -34,6 +34,7 @@ public class RawDataAccess {
 		PreparedStatement prepareStatement = null;
 		try {
 			prepareStatement = conn.prepareStatement(sql);
+			System.out.println(sql);
 			ResultSet resultSet = prepareStatement.executeQuery();
 			return resultSet;
 
@@ -225,10 +226,10 @@ public class RawDataAccess {
 		String sql = "select sum(volume) as cumVolume from xcube.settlement_data "
 				+ "where ticker='"
 				+ ticker
-				+ "' and date_sub(date('"
+				+ "' and tradingdate > date_sub(date('"
 				+ datetime
-				+ "'), interval 6 day) < tradingdate and date('"
-				+ datetime + "') > tradingdate;";
+				+ "'), interval 6 day) and tradingdate < date('"
+				+ datetime + "');";
 
 		if (conn == null) {
 			System.out
