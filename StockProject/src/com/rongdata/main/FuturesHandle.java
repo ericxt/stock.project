@@ -16,10 +16,9 @@ import com.rongdata.dbUtil.IndexUtil;
 import com.rongdata.dbUtil.KChartsMonthUtil;
 import com.rongdata.dbUtil.KChartsWeekUtil;
 import com.rongdata.dbUtil.MysqlDBUtil;
-import com.rongdata.dbUtil.StockUtil;
 import com.rongdata.dbUtil.TickerTimeshareUtil;
 
-public class StockProject {
+public class FuturesHandle {
 	static Logger logger = LogManager.getLogger();
 
 	public static void main(String[] args) {
@@ -27,7 +26,7 @@ public class StockProject {
 		int year = calendar.get(Calendar.YEAR);
 		int month = calendar.get(Calendar.MONTH);
 		int day = calendar.get(Calendar.DAY_OF_MONTH);
-		calendar.set(year, month, day + 1, 9, 16, 0);
+		calendar.set(year, month, day, 9, 16, 0);
 		Date date = calendar.getTime();
 
 		int period = 24 * 60 * 60 * 1000;
@@ -60,7 +59,7 @@ class StockHandleTask extends TimerTask {
 		FuturesUtil futuresUtil = new FuturesUtil(conn);
 		DebtUtil debtUtil = new DebtUtil(conn);
 		IndexUtil indexUtil = new IndexUtil(conn);
-		StockUtil stockUtil = new StockUtil(conn);
+		// StockUtil stockUtil = new StockUtil(conn);
 		TickerTimeshareUtil tickerTimeshareUtil = new TickerTimeshareUtil(conn);
 		KChartsWeekUtil kChartsWeekUtil = new KChartsWeekUtil(conn);
 		KChartsMonthUtil kChartsMonthUtil = new KChartsMonthUtil(conn);
@@ -222,56 +221,56 @@ class StockHandleTask extends TimerTask {
 		indexThread.start();
 
 		// stockThread
-		System.out.println("stockThread starting");
-		logger.info("stockThread starting");
-		Thread stockThread = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				while (!isAfterExpired(System.currentTimeMillis())) {
-					System.out.println(">>> getting stock operation");
-					stockUtil.operate();
-					System.out.println(">>> ended stock operation");
-					if (!stockStatementCreated) {
-						stockStatementCreated = true;
-					}
-					try {
-						System.out.println("stock sleeping for 5000 millis, currentMillisTime >>> "
-								+ System.currentTimeMillis());
-						Thread.sleep(5000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (isNoonExpired(System.currentTimeMillis())) {
-						Calendar calendar = Calendar.getInstance();
-						long curMillis = calendar.getTimeInMillis();
-						calendar.set(calendar.get(Calendar.YEAR),
-								calendar.get(Calendar.MONTH),
-								calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
-						long expectedMillis = calendar.getTimeInMillis();
-						System.out.println("Now is NoonExpired time, stockThread sleeping for "
-								+ (expectedMillis - curMillis) + " millis.");
-						logger.info("Now is NoonExpired time, stockThread sleeping for "
-								+ (expectedMillis - curMillis) + " millis.");
-
-						try {
-							Thread.sleep(expectedMillis - curMillis);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				}
-
-				if (stockStatementCreated) {
-					System.out.println("close stock statement");
-					stockUtil.closeStatement();
-				}
-			}
-		}, "StockThread");
-		stockThread.start();
+		// System.out.println("stockThread starting");
+		// logger.info("stockThread starting");
+		// Thread stockThread = new Thread(new Runnable() {
+		//
+		// @Override
+		// public void run() {
+		// // TODO Auto-generated method stub
+		// while (!isAfterExpired(System.currentTimeMillis())) {
+		// System.out.println(">>> getting stock operation");
+		// stockUtil.operate();
+		// System.out.println(">>> ended stock operation");
+		// if (!stockStatementCreated) {
+		// stockStatementCreated = true;
+		// }
+		// try {
+		// System.out.println("stock sleeping for 5000 millis, currentMillisTime >>> "
+		// + System.currentTimeMillis());
+		// Thread.sleep(5000);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// if (isNoonExpired(System.currentTimeMillis())) {
+		// Calendar calendar = Calendar.getInstance();
+		// long curMillis = calendar.getTimeInMillis();
+		// calendar.set(calendar.get(Calendar.YEAR),
+		// calendar.get(Calendar.MONTH),
+		// calendar.get(Calendar.DAY_OF_MONTH), 13, 0, 0);
+		// long expectedMillis = calendar.getTimeInMillis();
+		// System.out.println("Now is NoonExpired time, stockThread sleeping for "
+		// + (expectedMillis - curMillis) + " millis.");
+		// logger.info("Now is NoonExpired time, stockThread sleeping for "
+		// + (expectedMillis - curMillis) + " millis.");
+		//
+		// try {
+		// Thread.sleep(expectedMillis - curMillis);
+		// } catch (InterruptedException e) {
+		// // TODO Auto-generated catch block
+		// e.printStackTrace();
+		// }
+		// }
+		// }
+		//
+		// if (stockStatementCreated) {
+		// System.out.println("close stock statement");
+		// stockUtil.closeStatement();
+		// }
+		// }
+		// }, "StockThread");
+		// stockThread.start();
 
 		// tickerTimeShareThread
 		System.out.println("tickerTimeShareThread starting");
@@ -499,7 +498,7 @@ class StockHandleTask extends TimerTask {
 		calendar.setTimeInMillis(currentTimeMillis);
 		int hour = calendar.get(Calendar.HOUR_OF_DAY);
 		int minute = calendar.get(Calendar.MINUTE);
-		if ((hour == 15 && minute > 17) || (hour > 15)) {
+		if ((hour == 15 && minute > 17) || (hour > 24)) {
 			System.out.println("afterexpired >>> true");
 			return true;
 		}

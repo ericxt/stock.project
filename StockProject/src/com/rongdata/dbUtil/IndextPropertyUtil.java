@@ -143,7 +143,6 @@ public class IndextPropertyUtil {
 
 	Date calListingDate(String ticker) {
 		// TODO Auto-generated method stub
-		String tickerType = ticker.substring(0, 2);
 		String tickerDate = ticker.substring(2);
 		int deliveryTime = Integer.parseInt(tickerDate);
 		int deliveryYear = deliveryTime / 100 + 2000;
@@ -186,8 +185,6 @@ public class IndextPropertyUtil {
 		calendar.set(Calendar.WEEK_OF_MONTH, 3);
 		calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
 		int deliveryDay = calendar.get(Calendar.DAY_OF_MONTH);
-		long deliveryTimeMillis = calendar.getTimeInMillis();
-		Date deliveryDate = new Date(deliveryTimeMillis);
 
 		long tradingTimeMillis = tradingTime.getTime();
 		calendar.setTimeInMillis(tradingTimeMillis);
@@ -201,12 +198,6 @@ public class IndextPropertyUtil {
 			return 1;
 		}
 		return 0;
-	}
-
-	// there is no need
-	private int calType() {
-		// TODO Auto-generated method stub
-		return 1;
 	}
 
 	// to be completed

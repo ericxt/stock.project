@@ -50,7 +50,7 @@ public class RawDataAccess {
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
 		}
-		String sql = "select preSettlePrice from xcube.settlement_data where ticker = '"
+		String sql = "select preSettlementPrice from xcube.settlement_data where ticker = '"
 				+ ticker
 				+ "' and tradingDate = subdate('"
 				+ datetime
@@ -64,7 +64,7 @@ public class RawDataAccess {
 			prestmt = conn.prepareStatement(sql);
 			ResultSet rtst = prestmt.executeQuery();
 			while (rtst.next()) {
-				BigDecimal settlePrice = rtst.getBigDecimal("preSettlePrice");
+				BigDecimal settlePrice = rtst.getBigDecimal("preSettlementPrice");
 				System.out.println(settlePrice);
 				return settlePrice;
 			}

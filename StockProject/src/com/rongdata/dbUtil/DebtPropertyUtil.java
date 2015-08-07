@@ -53,7 +53,7 @@ public class DebtPropertyUtil {
 		int type = 0;
 		String superFutures = null;
 
-//		HashSet<String> mainTickerSet = new HashSet<String>();
+		// HashSet<String> mainTickerSet = new HashSet<String>();
 
 		if (conn == null) {
 			conn = MysqlDBUtil.getConnection();
@@ -64,7 +64,7 @@ public class DebtPropertyUtil {
 		try {
 			PreparedStatement prestmt = conn.prepareStatement(targetSql);
 
-			mainTickerSet  = getMainTicker();
+			mainTickerSet = getMainTicker();
 
 			while (resultSet.next()) {
 				ticker = resultSet.getString("ContractId");
@@ -100,15 +100,18 @@ public class DebtPropertyUtil {
 
 	HashSet<String> getMainTicker() {
 		// TODO Auto-generated method stub
-//		String sql = "select contractid, preholdings from "
-//				+ "(select * from xcube.market_quotation "
-//				+ "where contractid rlike '^(TF|T)[0-9].*' order by tradingtime<=now(),"
-//				+ "tradingtime desc) as a group by contractid;";
-		
-//		String sql = "select * from (select ContractId, PreHoldings from xcube.debt_quotation as a "
-//				+ "where TradingTime=(select TradingTime from xcube.latest_debt_tradingtime "
-//				+ "where a.ContractId=contractid)) as b group by contractid";
-		
+		// String sql = "select contractid, preholdings from "
+		// + "(select * from xcube.market_quotation "
+		// +
+		// "where contractid rlike '^(TF|T)[0-9].*' order by tradingtime<=now(),"
+		// + "tradingtime desc) as a group by contractid;";
+
+		// String sql =
+		// "select * from (select ContractId, PreHoldings from xcube.debt_quotation as a "
+		// +
+		// "where TradingTime=(select TradingTime from xcube.latest_debt_tradingtime "
+		// + "where a.ContractId=contractid)) as b group by contractid";
+
 		String sql = "select ContractId, PreHoldings from "
 				+ "(select ContractId, PreHoldings from xcube.debt_quotation "
 				+ "order by tradingtime desc) as a group by contractid;";
@@ -156,12 +159,6 @@ public class DebtPropertyUtil {
 		return null;
 	}
 
-	// there is no need
-	private int calType(int preHoldings) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
 	int calValidity(String ticker, Timestamp tradingTime) {
 		// TODO Auto-generated method stub
 		int deliveryTime = 0;
@@ -179,16 +176,12 @@ public class DebtPropertyUtil {
 		calendar.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
 		deliveryYear = calendar.get(Calendar.YEAR);
 		int deliveryDay = calendar.get(Calendar.DAY_OF_MONTH);
-		long deliveryTimeMillis = calendar.getTimeInMillis();
-		Date deliveryDate = new Date(deliveryTimeMillis);
 
 		long tradingTimeMillis = tradingTime.getTime();
 		calendar.setTimeInMillis(tradingTimeMillis);
 		int tradingYear = calendar.get(Calendar.YEAR);
 		int tradingMonth = calendar.get(Calendar.MONTH) + 1;
 		int tradingDay = calendar.get(Calendar.DAY_OF_MONTH);
-		// System.out.println(deliveryDate + ", " + deliveryTimeMillis + ", " +
-		// tradingTimeMillis);
 		if (deliveryYear > tradingYear || deliveryMonth > tradingMonth
 				|| (deliveryMonth == tradingMonth && deliveryDay > tradingDay)) {
 			return 1;
@@ -210,7 +203,6 @@ public class DebtPropertyUtil {
 		} else {
 			tickerDate = ticker.substring(1);
 		}
-		String tickerType = ticker.substring(0, 2);
 		int deliveryMonth = Integer.parseInt(tickerDate);
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(Calendar.YEAR, deliveryMonth / 100 + 2000);

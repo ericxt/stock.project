@@ -1,3 +1,18 @@
-00:01:14.441 [main] INFO  com.rongdata.main.StockProject - stock project starting...
-00:01:54.255 [main] INFO  com.rongdata.main.StockProject - stock project starting...
-00:02:04.596 [main] INFO  com.rongdata.main.StockProject - stock project starting...
+18:53:51.295 [main] INFO  com.rongdata.main.FuturesHandle - stock project starting...
+18:54:05.132 [Timer-0] INFO  com.rongdata.main.StockHandleTask - futuresThread starting
+18:54:05.133 [Timer-0] INFO  com.rongdata.main.StockHandleTask - debtThread starting
+18:54:05.135 [Timer-0] INFO  com.rongdata.main.StockHandleTask - indexThread starting
+18:54:05.136 [Timer-0] INFO  com.rongdata.main.StockHandleTask - tickerTimeShareThread starting
+18:54:05.138 [Timer-0] INFO  com.rongdata.main.StockHandleTask - kChartsWeekThread starting
+18:54:05.139 [Timer-0] INFO  com.rongdata.main.StockHandleTask - kChartsMonthThread starting
+18:54:05.140 [Timer-0] INFO  com.rongdata.main.StockHandleTask - close preparedStatement
+18:54:05.140 [Timer-0] INFO  com.rongdata.main.StockHandleTask - connCloseOperation
+18:57:41.995 [main] INFO  com.rongdata.main.FuturesHandle - stock project starting...
+18:57:55.631 [Timer-0] INFO  com.rongdata.main.StockHandleTask - futuresThread starting
+18:57:55.632 [Timer-0] INFO  com.rongdata.main.StockHandleTask - debtThread starting
+18:57:55.633 [Timer-0] INFO  com.rongdata.main.StockHandleTask - indexThread starting
+18:57:55.634 [Timer-0] INFO  com.rongdata.main.StockHandleTask - tickerTimeShareThread starting
+18:57:55.635 [Timer-0] INFO  com.rongdata.main.StockHandleTask - kChartsWeekThread starting
+18:57:55.635 [Timer-0] INFO  com.rongdata.main.StockHandleTask - kChartsMonthThread starting
+18:57:55.636 [Timer-0] INFO  com.rongdata.main.StockHandleTask - close preparedStatement
+18:57:55.636 [Timer-0] INFO  com.rongdata.main.StockHandleTask - connCloseOperation
